@@ -4,10 +4,11 @@ require './lib/stateful'
 class Kata
   include Stateful
 
-  attr_accessor :approved_by, :ready_score, :published_at
+  attr_accessor :approved_by, :ready_score, :published_at, :state_changes
 
   def initialize
     @ready_score = 0
+    @state_changes = 0
   end
 
   stateful  default: :draft,
@@ -24,6 +25,10 @@ class Kata
                 :retired => nil
             }
 
+
+  after_state_change do |doc|
+    doc.state_changes += 1
+  end
 
   def vote(ready)
     @ready_score += ready ? 1 : -1
@@ -124,6 +129,11 @@ describe Kata do
       kata.approved?.should be_false
       kata.approved_by.should be_nil
     end
+
+    it 'should support after callbacks methods' do
+      kata.publish
+      kata.state_changes.should == 1
+    end
   end
 
   describe Stateful::StateInfo do
@@ -141,6 +151,8 @@ describe Kata do
       Kata.state_infos[:needs_approval].to_transitions.should == [:draft, :approved]
 
       Kata.state_infos[:retired].to_transitions.should be_empty
+
+      p Kata.instance_methods
     end
   end
 end

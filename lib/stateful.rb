@@ -39,6 +39,7 @@ module Stateful
         # convert shortcut event name to options hash
         options = {event: options} if options.is_a? Symbol
         options[:persist_methods] = [:persist_state, :save]
+
         _change_state(new_state, options, &block)
       end
 
@@ -53,6 +54,13 @@ module Stateful
       end
 
       define_method '_change_state' do |new_state, options, &block|
+        # do a little magic and infer the event name from the method name used to call change_state
+        # TODO: decide if this is too magical, for now it has been commented out.
+        #unless options[:event]
+        #  calling_method = caller[1][/`.*'/][1..-2].gsub('!', '').to_sym
+        #  options[:event] = calling_method if state_events.include? calling_method
+        #end
+
         if block and block.call == false
           false
         else
@@ -76,12 +84,9 @@ module Stateful
 
       private :_change_state
 
-
       define_method 'can_transition_to?' do |new_state|
         state_info.can_transition_to?(new_state)
       end
-
-
 
       # init and configure state info
       init_state_info(options[:states])
@@ -93,10 +98,23 @@ module Stateful
         end
       end
 
-      # define the event callbacks
-      define_callbacks *([:state_change] + options[:events])
 
       define_state_attribute(options)
+
+      # define the event callbacks
+      events = ([:state_change] + options[:events])
+      define_callbacks *events
+
+      # define callback helpers
+      events.each do |event|
+        define_singleton_method "before_#{event}" do |method = nil, &block|
+          set_callback(event, :before, method ? method : block)
+        end
+
+        define_singleton_method "after_#{event}" do |method = nil, &block|
+          set_callback(event, :after, method ? method : block)
+        end
+      end
     end
 
     protected
@@ -112,10 +130,8 @@ module Stateful
 
     private
 
-
     def init_state_info(values, parent = nil)
       values.each do |name, config|
-
         info = state_infos[name] = Stateful::StateInfo.new(self, parent, name, config)
         init_state_info(config, info) if info.is_group?
       end

@@ -7,9 +7,10 @@ Gem::Specification.new do |spec|
   spec.name          = "stateful"
   spec.version       = Stateful::VERSION
   spec.authors       = ["jake hoffner"]
-  spec.email         = ["jake.hoffner@gmail.com"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.email         = ["jake@codewars.com"]
+  spec.description   = %q{A simple state machine gem}
+  spec.summary       = %q{A simple state machine gem. Works with plain ruby objects and Mongoid. This gem aims
+to keep things simple.}
   spec.homepage      = ""
   spec.license       = "MIT"
 
