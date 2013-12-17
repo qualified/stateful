@@ -57,6 +57,11 @@ class Project
             @published_at = Time.now
         end
     end
+
+    # use callbacks if you want
+    after_publish do |project|
+        NotificationService.notify_project_published(project)
+    end
 end
 
 project = Project.new
@@ -67,7 +72,7 @@ project.published? # => false
 
 If you are using with Mongoid a field called state will automatically be created for you.
 
-```
+```ruby
 class Project
     include Mongoid::Document # must be included first
     include Stateful
@@ -90,7 +95,8 @@ class Project
                 }
              }
 
-    ...
+
+    # ...
 end
 
 # scopes are automatically created for you
