@@ -20,7 +20,7 @@ module Stateful
     end
 
     def is?(state)
-      (@name == state or (parent and parent.is?(state)))
+      !!(@name == state or (parent and parent.is?(state)))
     end
 
     def is_group?

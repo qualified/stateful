@@ -87,6 +87,8 @@ describe Kata do
   it 'should support simple boolean helper methods' do
     kata.draft?.should be_true
     kata.published?.should be_false
+    kata.state = :needs_feedback
+    kata.published?.should be_true
   end
 
   context 'change_state' do

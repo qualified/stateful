@@ -91,7 +91,7 @@ module Stateful
         info.expand_to_transitions
 
         define_method "#{info.name}?" do
-          info.is?(self.state)
+          self.state_info.is?(info.name)
         end
       end
 

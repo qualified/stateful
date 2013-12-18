@@ -33,6 +33,13 @@ describe Stateful::Mongoid do
     kata.valid?.should be_false
   end
 
+  it 'should support state boolean helpers' do
+    kata.draft?.should be_true
+    kata.beta?.should be_false
+    kata.state = :needs_testing
+    kata.beta?.should be_true
+  end
+
   it 'should support can_transition_to?' do
     kata.can_transition_to?(:needs_testing).should be_true
     kata.can_transition_to?(:retired).should be_false
