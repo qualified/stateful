@@ -6,19 +6,20 @@ module Stateful
       protected
 
       def define_state_attribute(options)
-        field :state, type: Symbol, default: options[:default]
-        validates_inclusion_of :state,
+        field options[:name].to_sym, type: Symbol, default: options[:default]
+        validates_inclusion_of options[:name].to_sym,
                                in: state_infos.keys,
-                               message: options.has_key?(:message) ? options[:message] : 'invalid state value',
+                               message: options.has_key?(:message) ? options[:message] : "invalid options[:name] value",
                                allow_nil: !!options[:allow_nil]
 
         # configure scopes to query the attribute value
-        state_infos.values.each do |info|
+        __send__("#{options[:name]}_infos").values.each do |info|
           states = info.collect_child_states
+          scope_name = "#{options[:prefix]}#{info.name}"
           if states.length == 1
-            scope info.name, where(state: states.first)
+            scope scope_name, where(options[:name] => states.first)
           else
-            scope info.name, where(:state.in => states)
+            scope scope_name, where(options[:name].to_sym.in => states)
           end
         end
       end

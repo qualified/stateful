@@ -1,7 +1,8 @@
 module Stateful
   class StateInfo
     attr_reader :parent, :children, :name, :to_transitions
-    def initialize(state_class, parent, name, config)
+    def initialize(state_class, attr_name, parent, name, config)
+      @attr_name = attr_name
       @state_class = state_class
       if parent
         @parent = parent
@@ -27,8 +28,12 @@ module Stateful
       !!@groupConfig
     end
 
+    def infos
+      @state_class.__send__("#{@attr_name}_infos")
+    end
+
     def can_transition_to?(state)
-      state_info = @state_class.state_infos[state]
+      state_info = infos[state]
       if is_group? or state_info.nil? or state_info.is_group?
         false
       else
@@ -43,7 +48,7 @@ module Stateful
     def expand_to_transitions
       if to_transitions.any?
         @to_transitions = to_transitions.flat_map do |to|
-          info = @state_class.state_infos[to]
+          info = infos[to]
 
           if info.is_group?
             info.collect_child_states

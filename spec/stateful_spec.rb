@@ -25,6 +25,12 @@ class Kata
                 :retired => nil
             }
 
+  stateful :merge_status, default: :na, events: [:merge, :approve_merge, :reject_merge], states: {
+      na: :pending,
+      pending: [:approved, :rejected],
+      approved: nil,
+      rejected: :pending
+  }
 
   after_state_change do |doc|
     doc.state_changes += 1
@@ -73,15 +79,21 @@ describe Kata do
 
   it 'should support state_infos' do
     Kata.state_infos.should_not be_nil
+    Kata.merge_status_infos.should_not be_nil
   end
 
   it 'should support default state' do
     kata.state.should == :draft
+    kata.merge_status.should == :na
   end
 
   it 'should support state_info' do
     kata.state_info.should_not be_nil
     kata.state_info.name.should == :draft
+
+    # custom names
+    kata.merge_status_info.should_not be_nil
+    kata.merge_status_info.name.should == :na
   end
 
   it 'should support simple boolean helper methods' do
@@ -89,11 +101,18 @@ describe Kata do
     kata.published?.should be_false
     kata.state = :needs_feedback
     kata.published?.should be_true
+
+    # custom state names
+    kata.merge_status_na?.should be_true
+    kata.merge_status_approved?.should be_false
+    kata.merge_status = :approved
+    kata.merge_status_approved?.should be_true
   end
 
   context 'change_state' do
     it 'should raise error when an invalid transition state is provided' do
       expect{kata.send(:change_state!, :retired)}.to raise_error
+      expect{kata.send(:change_merge_status!, :approved)}.to raise_error
     end
 
     it 'should raise error when a group state is provided' do
@@ -106,6 +125,7 @@ describe Kata do
 
     it 'should support state_valid?' do
       kata.state_valid?.should be_true
+      kata.merge_status_valid?.should be_true
     end
 
     it 'should change the state when a proper state is provided' do
@@ -118,6 +138,11 @@ describe Kata do
       kata.send(:change_state, :needs_approval).should be_true
       kata.send(:change_state, :approved).should be_true
       kata.state.should == :approved
+
+      # custom
+      kata.send(:change_merge_status, :approved).should be_false
+      kata.send(:change_merge_status, :pending).should be_true
+      kata.merge_status.should == :pending
     end
 
     it 'should support calling passed blocks when state is valid' do
@@ -136,6 +161,15 @@ describe Kata do
       kata.publish
       kata.state_changes.should == 1
     end
+
+    it 'should support can_transition_to_state?' do
+      kata.can_transition_to_state?(:needs_feedback).should be_true
+      kata.can_transition_to_state?(:approved).should be_false
+
+      # custom states
+      kata.can_transition_to_merge_status?(:pending).should be_true
+      kata.can_transition_to_merge_status?(:approved).should be_false
+    end
   end
 
   describe Stateful::StateInfo do
@@ -146,6 +180,9 @@ describe Kata do
       Kata.state_infos[:approved].is?(:published).should be_true
       Kata.state_infos[:approved].is?(:beta).should be_false
       Kata.state_infos[:retired].is?(:beta).should be_false
+
+      # custom
+      Kata.merge_status_infos[:na].is?(:na).should be_true
     end
 
     it 'should support expanded to transitions' do
@@ -153,6 +190,13 @@ describe Kata do
       Kata.state_infos[:needs_approval].to_transitions.should == [:draft, :approved]
 
       Kata.state_infos[:retired].to_transitions.should be_empty
+    end
+
+    it 'should support can_transition_to?' do
+      Kata.state_infos[:draft].can_transition_to?(:needs_feedback).should be_true
+      Kata.state_infos[:draft].can_transition_to?(:approved).should be_false
+
+      Kata.merge_status_infos[:na].can_transition_to?(:pending).should be_true
     end
   end
 end
