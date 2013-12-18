@@ -9,7 +9,7 @@ module Stateful
     if defined?(Mongoid)
       require 'mongoid/document'
       require 'stateful/mongoid'
-      include Stateful::Mongoid if included_modules.include?(::Mongoid::Document)
+      include Stateful::MongoidIntegration if included_modules.include?(::Mongoid::Document)
     end
   end
 

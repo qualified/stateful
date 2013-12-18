@@ -1,5 +1,5 @@
 module Stateful
-  module Mongoid
+  module MongoidIntegration
     extend ActiveSupport::Concern
 
     module ClassMethods

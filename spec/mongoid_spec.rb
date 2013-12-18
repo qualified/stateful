@@ -74,5 +74,7 @@ describe Stateful::Mongoid do
     Kata.draft.selector.should == {"state" => :draft}
   end
 
-
+  it 'should create prefixed scopes for each state and virtual state of custom state fields' do
+    Kata.merge_status_pending.selector.should == {"merge_status" => :pending}
+  end
 end
