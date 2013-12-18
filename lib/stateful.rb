@@ -8,6 +8,7 @@ module Stateful
   included do
     if defined?(Mongoid)
       require 'mongoid/document'
+      require 'stateful/mongoid'
       include Stateful::Mongoid if included_modules.include?(::Mongoid::Document)
     end
   end
@@ -35,25 +36,18 @@ module Stateful
       define_method 'change_state' do |new_state, options = {}, &block|
         return false if new_state == state
         return false unless state_info.can_transition_to?(new_state)
-
-        # convert shortcut event name to options hash
-        options = {event: options} if options.is_a? Symbol
-        options[:persist_methods] = [:persist_state, :save]
-
-        _change_state(new_state, options, &block)
+        _change_state(new_state, options, [:persist_state, :save], &block)
       end
 
       define_method 'change_state!' do |new_state, options = {}, &block|
-        return false if new_state == state
         raise "transition from #{state} to #{new_state} not allowed" unless state_info.can_transition_to?(new_state)
-
-        # convert shortcut event name to options hash
-        options = {event: options} if options.is_a? Symbol
-        options[:persist_methods] = [:persist_state!, :save!]
-        _change_state(new_state, options, &block)
+        _change_state(new_state, options, [:persist_state!, :save!], &block)
       end
 
-      define_method '_change_state' do |new_state, options, &block|
+      define_method '_change_state' do |new_state, options, persist_methods, &block|
+        # convert shortcut event name to options hash
+        options = {event: options} if options.is_a? Symbol
+
         # do a little magic and infer the event name from the method name used to call change_state
         # TODO: decide if this is too magical, for now it has been commented out.
         #unless options[:event]
@@ -68,20 +62,23 @@ module Stateful
           callbacks << options[:event] if options[:event]
           run_callbacks *callbacks do
             self.state = new_state
-            if options[:persist_methods]
-              method = options[:persist_methods].find {|m| respond_to?(m)}
+
+            ## if a specific persist method value was provided
+            #if options.has_key?(:persist_method)
+            #  # call the method if one was provided
+            #  __send__(options[:persist_method]) if options[:persist_method]
+            ## if no persist method option was provided than use the defaults
+            #else
+              method = persist_methods.find {|m| respond_to?(m)}
               __send__(method) if method
-            end
-            if respond_to?(:persist_state)
-              persist_state
-            elsif respond_to?(:save!)
-              save!
-            end
+            #end
           end
           true
         end
       end
 
+      protected :change_state
+      protected :change_state!
       private :_change_state
 
       define_method 'can_transition_to?' do |new_state|

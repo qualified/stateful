@@ -91,15 +91,15 @@ describe Kata do
 
   context 'change_state' do
     it 'should raise error when an invalid transition state is provided' do
-      expect{kata.change_state(:retired)}.to raise_error
+      expect{kata.send(:change_state!, :retired)}.to raise_error
     end
 
     it 'should raise error when a group state is provided' do
-      expect{kata.change_state(:beta)}.to raise_error
+      expect{kata.send(:change_state!, :beta)}.to raise_error
     end
 
     it 'should return false when state is the same' do
-      kata.change_state(:draft).should be_false
+      kata.send(:change_state, :draft).should be_false
     end
 
     it 'should support state_valid?' do
@@ -107,14 +107,14 @@ describe Kata do
     end
 
     it 'should change the state when a proper state is provided' do
-      kata.change_state(:needs_feedback).should be_true
+      kata.send(:change_state, :needs_feedback).should be_true
       kata.state.should == :needs_feedback
-      kata.change_state(:needs_approval).should be_true
+      kata.send(:change_state, :needs_approval).should be_true
       kata.state.should == :needs_approval
-      kata.change_state(:draft).should be_true
+      kata.send(:change_state, :draft).should be_true
       kata.state.should == :draft
-      kata.change_state(:needs_approval).should be_true
-      kata.change_state(:approved).should be_true
+      kata.send(:change_state, :needs_approval).should be_true
+      kata.send(:change_state, :approved).should be_true
       kata.state.should == :approved
     end
 
@@ -151,8 +151,6 @@ describe Kata do
       Kata.state_infos[:needs_approval].to_transitions.should == [:draft, :approved]
 
       Kata.state_infos[:retired].to_transitions.should be_empty
-
-      p Kata.instance_methods
     end
   end
 end

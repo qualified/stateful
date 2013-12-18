@@ -1,6 +1,7 @@
 require 'spec_helper'
 require './lib/stateful'
 require 'mongoid'
+require 'mongoid/document'
 
 
 class Kata
@@ -33,7 +34,7 @@ describe Stateful::Mongoid do
   end
 
   it 'should support can_transition_to?' do
-    kata.can_transition_to?(:beta).should be_true
+    kata.can_transition_to?(:needs_testing).should be_true
     kata.can_transition_to?(:retired).should be_false
   end
 

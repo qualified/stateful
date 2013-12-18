@@ -40,7 +40,7 @@ class Project
                 active: {
                     new: :published,
                     published: {
-                        needs_approval: [:approved, :duplicate],
+                        needs_approval: [:approved, :duplicate, :new],
                         approved: :closed
                     }
                 },
@@ -62,6 +62,8 @@ class Project
     after_publish do |project|
         NotificationService.notify_project_published(project)
     end
+
+    # define other event methods ...
 end
 
 project = Project.new
