@@ -29,17 +29,12 @@ class Kata
     change_state(:needs_testing, :publish)
   end
 
-  after_state_change do
-
-    p self.is_a?(Kata)
-  end
-
   def persist_state
 
   end
 end
 
-describe Stateful::Mongoid do
+describe Stateful::MongoidIntegration do
   let(:kata) {Kata.new}
 
   it 'should support creating a state field' do
@@ -52,9 +47,15 @@ describe Stateful::Mongoid do
 
   it 'should support validating state values' do
     kata.state.should == :draft
+    kata.merge_status.should == :na
     kata.valid?.should be_true
     kata.state = :invalid
     kata.valid?.should be_false
+  end
+
+  it 'should allow states to be set manually' do
+    kata.state = :approved
+    kata.valid?.should be_true
   end
 
   it 'should support state boolean helpers' do
@@ -76,5 +77,11 @@ describe Stateful::Mongoid do
 
   it 'should create prefixed scopes for each state and virtual state of custom state fields' do
     Kata.merge_status_pending.selector.should == {"merge_status" => :pending}
+  end
+
+  it 'should support previous_state' do
+    kata.previous_state.should be_nil
+
+    # cant test after creation right now until mongoid is configured correctly
   end
 end

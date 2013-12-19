@@ -65,26 +65,23 @@ module Stateful
         #  options[:event] = calling_method if state_events.include? calling_method
         #end
 
-        if block and block.call == false
-          false
-        else
-          callbacks = ["#{name}_change".to_sym]
-          callbacks << options[:event] if options[:event]
-          run_callbacks *callbacks do
-            self.__send__("#{name}=", new_state)
+        callbacks = ["#{name}_change".to_sym]
+        callbacks << options[:event] if options[:event]
+        run_callbacks *callbacks do
+          __send__("#{name}=", new_state)
+          block.call if block
 
-            ## if a specific persist method value was provided
-            #if options.has_key?(:persist_method)
-            #  # call the method if one was provided
-            #  __send__(options[:persist_method]) if options[:persist_method]
-            ## if no persist method option was provided than use the defaults
-            #else
-              method = persist_methods.find {|m| respond_to?(m)}
-              __send__(method) if method
-            #end
+          ## if a specific persist method value was provided
+          if options.has_key?(:persist_method)
+            # call the method if one was provided
+            __send__(options[:persist_method]) if options[:persist_method]
+          # if no persist method option was provided than use the defaults
+          else
+            method = persist_methods.find {|m| respond_to?(m)}
+            __send__(method) if method
           end
-          true
         end
+        true
       end
 
       protected "change_#{name}"
@@ -101,7 +98,8 @@ module Stateful
         info.expand_to_transitions
 
         define_method "#{options[:prefix]}#{info.name}?" do
-          __send__("#{name}_info").is?(info.name)
+          current_info = __send__("#{name}_info")
+          !!(current_info && current_info.is?(info.name))
         end
       end
 
