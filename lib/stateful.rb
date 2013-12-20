@@ -65,20 +65,20 @@ module Stateful
         #  options[:event] = calling_method if state_events.include? calling_method
         #end
 
-        callbacks = ["#{name}_change".to_sym]
-        callbacks << options[:event] if options[:event]
-        run_callbacks *callbacks do
-          __send__("#{name}=", new_state)
-          block.call if block
+        run_callbacks "#{name}_change".to_sym, new_state do
+          run_callbacks (options[:event] || "#{name}_non_event_change") do
+            __send__("#{name}=", new_state)
+            block.call if block
 
-          ## if a specific persist method value was provided
-          if options.has_key?(:persist_method)
-            # call the method if one was provided
-            __send__(options[:persist_method]) if options[:persist_method]
-          # if no persist method option was provided than use the defaults
-          else
-            method = persist_methods.find {|m| respond_to?(m)}
-            __send__(method) if method
+            ## if a specific persist method value was provided
+            if options.has_key?(:persist_method)
+              # call the method if one was provided
+              __send__(options[:persist_method]) if options[:persist_method]
+            # if no persist method option was provided than use the defaults
+            else
+              method = persist_methods.find {|m| respond_to?(m)}
+              __send__(method) if method
+            end
           end
         end
         true
@@ -106,7 +106,7 @@ module Stateful
       define_state_attribute(options)
 
       # define the event callbacks
-      events = (["#{name}_change".to_sym] + options[:events])
+      events = (["#{name}_change".to_sym, "#{name}_non_event_change".to_sym] + options[:events])
       define_callbacks *events
 
       # define callback helpers

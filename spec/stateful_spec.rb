@@ -4,11 +4,12 @@ require './lib/stateful'
 class Kata
   include Stateful
 
-  attr_accessor :approved_by, :ready_score, :published_at, :state_changes
+  attr_accessor :approved_by, :ready_score, :published_at, :state_changes, :times_pending
 
   def initialize
     @ready_score = 0
     @state_changes = 0
+    @times_pending = 0
   end
 
   stateful  default: :draft,
@@ -36,6 +37,10 @@ class Kata
     doc.state_changes += 1
   end
 
+  after_publish do
+    @times_pending += 1
+  end
+
   def vote(ready)
     @ready_score += ready ? 1 : -1
 
@@ -50,23 +55,23 @@ class Kata
   end
 
   def publish
-    change_state(enough_votes_for_approval? ? :needs_approval : :needs_feedback) do
+    change_state(enough_votes_for_approval? ? :needs_approval : :needs_feedback, :publish) do
       @published_at = Time.now
     end
   end
 
   def unpublish
-    change_state(:draft)
+    change_state(:draft, :unpublish)
   end
 
   def approve(approved_by)
-    change_state(:approved) do
+    change_state(:approved, :approve) do
       @approved_by = approved_by
     end
   end
 
   def retire
-    change_state(:retire)
+    change_state(:retired, :retire)
   end
 
   def enough_votes_for_approval?
@@ -160,6 +165,7 @@ describe Kata do
     it 'should support after callbacks methods' do
       kata.publish
       kata.state_changes.should == 1
+      kata.times_pending.should == 1
     end
 
     it 'should support can_transition_to_state?' do
