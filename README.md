@@ -152,7 +152,7 @@ state_event :publish do
 end
 ```
 
-So what is going on here? The `state_event` method is being passed the event name, which causes both the `publish` and `publish!` methods to be created. Additionally there is a new instance method available that is called `transition_to_state(new_state)`. When this method is invoked it will in turn call either `change_state(new_state, :publish)` or `change_state!(new_state, :published)
+So what is going on here? The `state_event` method is being passed the event name, which causes both the `publish` and `publish!` methods to be created. Additionally there is a new instance method available that is called `transition_to_state(new_state)`. When this method is invoked it will in turn call either `change_state(new_state, :publish)` or `change_state!(new_state, :published)`
 
 **Note** that `transition_to_state` is only meant to be called while one of the the event methods (in this example either `publish` or `publish!`) are being invoked. Calling this method any other time will raise an error.
 
