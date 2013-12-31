@@ -66,6 +66,7 @@ module Stateful
         #end
 
         run_callbacks "#{name}_change".to_sym, new_state do
+
           run_callbacks (options[:event] || "#{name}_non_event_change") do
             __send__("#{name}=", new_state)
             block.call if block
@@ -77,22 +78,68 @@ module Stateful
             # if no persist method option was provided than use the defaults
             else
               method = persist_methods.find {|m| respond_to?(m)}
-              __send__(method) if method
+              if method
+                __send__(method)
+              else
+                true
+              end
             end
           end
         end
-        true
       end
 
       protected "change_#{name}"
       protected "change_#{name}!"
       private :_change_state
 
+      ## state events support:
+
+      # provide a reader so that the current event being fired can be accessed
+      attr_reader "#{name}_event".to_sym
+
+      define_singleton_method "#{name}_event" do |event, &block|
+        define_method(event) do
+          instance_variable_set("@#{name}_change_method", "change_#{name}")
+          instance_variable_set("@#{name}_event", event)
+          begin
+            result = instance_eval &block
+          ensure
+            instance_variable_set("@#{name}_change_method", nil)
+            instance_variable_set("@#{name}_event", nil)
+          end
+          result
+        end
+
+        define_method("#{event}!") do
+          instance_variable_set("@#{name}_change_method", "change_#{name}!")
+          instance_variable_set("@#{name}_event", event)
+          begin
+            result = instance_eval &block
+          ensure
+            instance_variable_set("@#{name}_change_method", nil)
+            instance_variable_set("@#{name}_event", nil)
+          end
+          result
+        end
+      end
+
+      # define the transition_to_state method that works in conjunction with the state_event
+      define_method "transition_to_#{name}" do |new_state, &block|
+        event = __send__("#{name}_event")
+        raise "transition_to_#{name} can only be called while a #{name} event is being called" unless event
+
+        method = instance_variable_get("@#{name}_change_method")
+        __send__(method, new_state, event, &block)
+      end
+
+      protected "transition_to_#{name}"
+
       define_method "can_transition_to_#{name}?" do |new_state|
         __send__("#{name}_info").can_transition_to?(new_state)
       end
 
-      # init and configure state info
+      ## init and configure state info:
+
       init_state_info(name, options[:states])
       __send__("#{name}_infos").values.each do |info|
         info.expand_to_transitions

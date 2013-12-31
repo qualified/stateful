@@ -4,12 +4,13 @@ require './lib/stateful'
 class Kata
   include Stateful
 
-  attr_accessor :approved_by, :ready_score, :published_at, :state_changes, :times_pending
+  attr_accessor :approved_by, :ready_score, :published_at, :state_changes, :times_pending, :published_by
 
   def initialize
     @ready_score = 0
     @state_changes = 0
     @times_pending = 0
+    @published_by
   end
 
   stateful  default: :draft,
@@ -37,9 +38,7 @@ class Kata
     doc.state_changes += 1
   end
 
-  after_publish do
-    @times_pending += 1
-  end
+
 
   def vote(ready)
     @ready_score += ready ? 1 : -1
@@ -54,10 +53,15 @@ class Kata
     end
   end
 
-  def publish
-    change_state(enough_votes_for_approval? ? :needs_approval : :needs_feedback, :publish) do
+  state_event :publish do |published_by|
+    transition_to_state(enough_votes_for_approval? ? :needs_approval : :needs_feedback) do
       @published_at = Time.now
+      @published_by = published_by
     end
+  end
+
+  after_publish do
+    @times_pending += 1
   end
 
   def unpublish
@@ -152,8 +156,15 @@ describe Kata do
 
     it 'should support calling passed blocks when state is valid' do
       kata.published_at.should be_nil
-      kata.publish
+      kata.publish!
       kata.published_at.should_not be_nil
+    end
+
+    pending 'should support passing in parameters to state_event defined methods' do
+      kata.published_by.should be_nil
+      kata.publish('test')
+      kata.published_by.should == 'test'
+      kata.published?.should be_true
     end
 
     it 'should support ingoring passed blocked when state is not valid' do
