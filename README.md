@@ -108,7 +108,9 @@ Project.published.count
 
 ### State Event Helpers
 
-`change_state` and `change_state!` are great low level utilities for changing the state of the object. However one issue is that sometimes you wish to provide a bang and non-bang version of an event method. For example:
+Two forms of change state methods are provided. There is the `change_state` method that was demonstrated above and then there is the `change_state!` version, which will raise an error instead of returning false if the state cannot be changed. 
+
+`change_state` and `change_state!` are great low level utilities for changing the state of the object. However one issue is that sometimes you wish to provide both a bang and non-bang version of an event method. For example:
 
 ```ruby
 def publish
@@ -150,9 +152,12 @@ state_event :publish do
 end
 ```
 
-So what is going on here? The `state_event` method is being passed the event name, which causes both the `publish` and `publish!` methods to be created. Additionally there is a new instance method available that is called `transition_to_state(new_state)`. When this method is invoked it will in turn call either `change_state(new_state, :publish)` or `change_state!(new_state, :published)`. 
+So what is going on here? The `state_event` method is being passed the event name, which causes both the `publish` and `publish!` methods to be created. Additionally there is a new instance method available that is called `transition_to_state(new_state)`. When this method is invoked it will in turn call either `change_state(new_state, :publish)` or `change_state!(new_state, :published)
 
-Note that `transition_to_state` is only meant to be called while one of the the event methods (in this example either `publish` or `publish!`) are being invoked. Calling this method any other time will raise an error.
+**Note** that `transition_to_state` is only meant to be called while one of the the event methods (in this example either `publish` or `publish!`) are being invoked. Calling this method any other time will raise an error.
+
+**Also note** that currently `state_event` does not support handling method arguments. This is a planned feature but for now, if you need to support both bang and non-bang versions than you will need to use the lower level `change_state` method. 
+
 
 ## Contributing
 
