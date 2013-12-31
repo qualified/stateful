@@ -106,6 +106,54 @@ Project.active.count
 Project.published.count
 ```
 
+### State Event Helpers
+
+`change_state` and `change_state!` are great low level utilities for changing the state of the object. However one issue is that sometimes you wish to provide a bang and non-bang version of an event method. For example:
+
+```ruby
+def publish
+  change_state(:needs_approval, :publish) do
+    @published_at = Time.now
+  end
+end
+
+def publish!
+  change_state!(:needs_approval, :publish) do
+    @published_at = Time.now
+  end
+end
+```
+
+Clearly this is not very dry. You could dry it up some more by using a callback, such as like this:
+
+```ruby
+def publish
+  change_state(:needs_approval, :publish)
+end
+
+def publish!
+  change_state!(:needs_approval, :publish)
+end
+
+before_publish do
+  @published_at = Time.now
+end
+```
+
+However this is not much better. Especially if there is additional logic contained within the publish methods. Because of this there is an additional class helper called `state_event` that you can use to define both `publish` and `publish!` while only having to declare the logic once. 
+
+```ruby
+state_event :publish do
+  transition_to_state(:published) do
+    @published_at = Time.now
+  end
+end
+```
+
+So what is going on here? The `state_event` method is being passed the event name, which causes both the `publish` and `publish!` methods to be created. Additionally there is a new instance method available that is called `transition_to_state(new_state)`. When this method is invoked it will in turn call either `change_state(new_state, :publish)` or `change_state!(new_state, :published)`. 
+
+Note that `transition_to_state` is only meant to be called while one of the the event methods (in this example either `publish` or `publish!`) are being invoked. Calling this method any other time will raise an error.
+
 ## Contributing
 
 1. Fork it
