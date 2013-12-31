@@ -3,7 +3,6 @@
 A simple state machine gem. Works with plain ruby objects and Mongoid. This gem aims
 to keep things simple. It supports the following:
 
-- Single state attribute/field per object
 - Simple event model, just use plain ruby methods as your events and use the change_state helper to change the state.
 - Supports virtual/grouped states that can be used to break down top level states into more granular sub-states.
 - Utilizes ActiveSupport::Callbacks
@@ -11,6 +10,7 @@ to keep things simple. It supports the following:
 - ActiveSupport is the only dependency.
 - Very small code footprint.
 - Mongoid support, automatically creates field, validations and scopes for you.
+- Supports multiple state fields on the same object
 
 ## Installation
 
