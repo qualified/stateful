@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Stateful by Codewars</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Stateful</h1>
+        <h2>Very simple Ruby state machine. </h2>
+        <a href="https://github.com/Codewars/stateful" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a name="stateful" class="anchor" href="#stateful"><span class="octicon octicon-link"></span></a>Stateful</h1>
+
+<p>A simple state machine gem. Works with plain ruby objects and Mongoid. This gem aims
+to keep things simple. It supports the following:</p>
+
+<ul>
+<li>Simple event model, just use plain ruby methods as your events and use the change_state helper to change the state.</li>
+<li>Supports virtual/grouped states that can be used to break down top level states into more granular sub-states.</li>
+<li>Utilizes ActiveSupport::Callbacks</li>
+<li>Simple hash structure for defining states and their possible transitions. No complicated DSL to learn.</li>
+<li>ActiveSupport is the only dependency.</li>
+<li>Very small code footprint.</li>
+<li>Mongoid support, automatically creates field, validations and scopes for you.</li>
+<li>Supports multiple state fields on the same object</li>
+</ul><h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<p>Add this line to your application's Gemfile:</p>
+
+<pre><code>gem 'stateful'
+</code></pre>
+
+<p>And then execute:</p>
+
+<pre><code>$ bundle
+</code></pre>
+
+<p>Or install it yourself as:</p>
+
+<pre><code>$ gem install stateful
+</code></pre>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<div class="highlight highlight-ruby"><pre><span class="k">class</span> <span class="nc">Project</span>
+    <span class="kp">include</span> <span class="no">Stateful</span>
+
+    <span class="kp">attr_reader</span> <span class="ss">:published_at</span>
+
+    <span class="n">stateful</span> <span class="ss">default</span><span class="p">:</span> <span class="ss">:new</span><span class="p">,</span>
+             <span class="ss">events</span><span class="p">:</span> <span class="o">[</span><span class="ss">:publish</span><span class="p">,</span> <span class="ss">:unpublish</span><span class="p">,</span> <span class="ss">:approve</span><span class="p">,</span> <span class="ss">:close</span><span class="p">,</span> <span class="ss">:mark_as_duplicate</span><span class="o">]</span><span class="p">,</span>
+             <span class="ss">states</span><span class="p">:</span> <span class="p">{</span>
+                <span class="ss">active</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="kp">new</span><span class="p">:</span> <span class="ss">:published</span><span class="p">,</span>
+                    <span class="ss">published</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">needs_approval</span><span class="p">:</span> <span class="o">[</span><span class="ss">:approved</span><span class="p">,</span> <span class="ss">:duplicate</span><span class="p">,</span> <span class="ss">:new</span><span class="o">]</span><span class="p">,</span>
+                        <span class="ss">approved</span><span class="p">:</span> <span class="ss">:closed</span>
+                    <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="ss">inactive</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="ss">closed</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span>
+                    <span class="ss">duplicate</span><span class="p">:</span> <span class="kp">nil</span>
+                <span class="p">}</span>
+             <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">publish</span>
+        <span class="c1"># change the state to needs_approval and fire publish events. The block will only be</span>
+        <span class="c1"># called if the state can successfully be changed.</span>
+        <span class="n">change_state</span><span class="p">(</span><span class="ss">:needs_approval</span><span class="p">,</span> <span class="ss">:publish</span><span class="p">)</span> <span class="k">do</span>
+            <span class="vi">@published_at</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+        <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="c1"># use callbacks if you want</span>
+    <span class="n">after_publish</span> <span class="k">do</span> <span class="o">|</span><span class="n">project</span><span class="o">|</span>
+        <span class="no">NotificationService</span><span class="o">.</span><span class="n">notify_project_published</span><span class="p">(</span><span class="n">project</span><span class="p">)</span>
+    <span class="k">end</span>
+
+    <span class="c1"># define other event methods ...</span>
+<span class="k">end</span>
+
+<span class="n">project</span> <span class="o">=</span> <span class="no">Project</span><span class="o">.</span><span class="n">new</span>
+<span class="n">project</span><span class="o">.</span><span class="n">active?</span> <span class="c1"># =&gt; true</span>
+<span class="n">project</span><span class="o">.</span><span class="n">new?</span> <span class="c1"># =&gt; true</span>
+<span class="n">project</span><span class="o">.</span><span class="n">published?</span> <span class="c1"># =&gt; false</span>
+</pre></div>
+
+<p>If you are using with Mongoid a field called state will automatically be created for you.</p>
+
+<div class="highlight highlight-ruby"><pre><span class="k">class</span> <span class="nc">Project</span>
+    <span class="kp">include</span> <span class="no">Mongoid</span><span class="o">::</span><span class="no">Document</span> <span class="c1"># must be included first</span>
+    <span class="kp">include</span> <span class="no">Stateful</span>
+
+    <span class="n">field</span> <span class="ss">:published_at</span><span class="p">,</span> <span class="ss">type</span><span class="p">:</span> <span class="no">Time</span>
+
+    <span class="n">stateful</span> <span class="ss">default</span><span class="p">:</span> <span class="ss">:new</span><span class="p">,</span>
+             <span class="ss">events</span><span class="p">:</span> <span class="o">[</span><span class="ss">:publish</span><span class="p">,</span> <span class="ss">:unpublish</span><span class="p">,</span> <span class="ss">:approve</span><span class="p">,</span> <span class="ss">:close</span><span class="p">,</span> <span class="ss">:mark_as_duplicate</span><span class="o">]</span><span class="p">,</span>
+             <span class="ss">states</span><span class="p">:</span> <span class="p">{</span>
+                <span class="ss">active</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="kp">new</span><span class="p">:</span> <span class="ss">:published</span><span class="p">,</span>
+                    <span class="ss">published</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="n">needs_approval</span><span class="p">:</span> <span class="o">[</span><span class="ss">:approved</span><span class="p">,</span> <span class="ss">:duplicate</span><span class="o">]</span><span class="p">,</span>
+                        <span class="ss">approved</span><span class="p">:</span> <span class="ss">:closed</span>
+                    <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="ss">inactive</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="ss">closed</span><span class="p">:</span> <span class="kp">nil</span><span class="p">,</span>
+                    <span class="ss">duplicate</span><span class="p">:</span> <span class="kp">nil</span>
+                <span class="p">}</span>
+             <span class="p">}</span>
+
+
+    <span class="c1"># ...</span>
+<span class="k">end</span>
+
+<span class="c1"># scopes are automatically created for you</span>
+<span class="no">Project</span><span class="o">.</span><span class="n">active</span><span class="o">.</span><span class="n">count</span>
+<span class="no">Project</span><span class="o">.</span><span class="n">published</span><span class="o">.</span><span class="n">count</span>
+</pre></div>
+
+<h3>
+<a name="state-event-helpers" class="anchor" href="#state-event-helpers"><span class="octicon octicon-link"></span></a>State Event Helpers</h3>
+
+<p>Two forms of change state methods are provided. There is the <code>change_state</code> method that was demonstrated above and then there is the <code>change_state!</code> version, which will raise an error instead of returning false if the state cannot be changed. </p>
+
+<p><code>change_state</code> and <code>change_state!</code> are great low level utilities for changing the state of the object. However one issue is that sometimes you wish to provide both a bang and non-bang version of an event method. For example:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="k">def</span> <span class="nf">publish</span>
+  <span class="n">change_state</span><span class="p">(</span><span class="ss">:needs_approval</span><span class="p">,</span> <span class="ss">:publish</span><span class="p">)</span> <span class="k">do</span>
+    <span class="vi">@published_at</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="k">def</span> <span class="nf">publish!</span>
+  <span class="n">change_state!</span><span class="p">(</span><span class="ss">:needs_approval</span><span class="p">,</span> <span class="ss">:publish</span><span class="p">)</span> <span class="k">do</span>
+    <span class="vi">@published_at</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Clearly this is not very dry. You could dry it up some more by using a callback, such as like this:</p>
+
+<div class="highlight highlight-ruby"><pre><span class="k">def</span> <span class="nf">publish</span>
+  <span class="n">change_state</span><span class="p">(</span><span class="ss">:needs_approval</span><span class="p">,</span> <span class="ss">:publish</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="k">def</span> <span class="nf">publish!</span>
+  <span class="n">change_state!</span><span class="p">(</span><span class="ss">:needs_approval</span><span class="p">,</span> <span class="ss">:publish</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">before_publish</span> <span class="k">do</span>
+  <span class="vi">@published_at</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>However this is not much better. Especially if there is additional logic contained within the publish methods. Because of this there is an additional class helper called <code>state_event</code> that you can use to define both <code>publish</code> and <code>publish!</code> while only having to declare the logic once. </p>
+
+<div class="highlight highlight-ruby"><pre><span class="n">state_event</span> <span class="ss">:publish</span> <span class="k">do</span>
+  <span class="n">transition_to_state</span><span class="p">(</span><span class="ss">:published</span><span class="p">)</span> <span class="k">do</span>
+    <span class="vi">@published_at</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>So what is going on here? The <code>state_event</code> method is being passed the event name, which causes both the <code>publish</code> and <code>publish!</code> methods to be created. Additionally there is a new instance method available that is called <code>transition_to_state(new_state)</code>. When this method is invoked it will in turn call either <code>change_state(new_state, :publish)</code> or <code>change_state!(new_state, :published)</code></p>
+
+<p><strong>Note</strong> that <code>transition_to_state</code> is only meant to be called while one of the the event methods (in this example either <code>publish</code> or <code>publish!</code>) are being invoked. Calling this method any other time will raise an error.</p>
+
+<p><strong>Also note</strong> that currently <code>state_event</code> does not support handling method arguments. This is a planned feature but for now, if you need to support both bang and non-bang versions than you will need to use the lower level <code>change_state</code> method. </p>
+
+<h2>
+<a name="contributing" class="anchor" href="#contributing"><span class="octicon octicon-link"></span></a>Contributing</h2>
+
+<ol>
+<li>Fork it</li>
+<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
+<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
+<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
+<li>Create new Pull Request</li>
+</ol>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/Codewars/stateful/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/Codewars/stateful/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/Codewars/stateful"></a> is maintained by <a href="https://github.com/Codewars">Codewars</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
