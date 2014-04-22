@@ -2,6 +2,8 @@ module Stateful
   class StateInfo
     attr_reader :parent, :children, :name, :to_transitions
     def initialize(state_class, attr_name, parent, name, config)
+      raise ':new cannot be used as a state name do to naming conflicts' if name.to_s == 'new'
+
       @attr_name = attr_name
       @state_class = state_class
       if parent
