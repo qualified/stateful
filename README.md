@@ -35,7 +35,7 @@ class Project
     attr_reader :published_at
 
     stateful default: :draft,
-             events: [:publish, :unpublish, :approve, :close, :mark_as_duplicate],
+             events: [:publish, :unpublish, :approve, :complete, :mark_as_duplicate],
              states: {
                 active: {
                     draft: :published,
@@ -45,7 +45,7 @@ class Project
                     }
                 },
                 inactive: {
-                    closed: nil,
+                    completed: nil,
                     duplicate: nil
                 }
              }
