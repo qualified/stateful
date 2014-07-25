@@ -34,13 +34,13 @@ class Project
 
     attr_reader :published_at
 
-    stateful default: :new,
+    stateful default: :fresh,
              events: [:publish, :unpublish, :approve, :close, :mark_as_duplicate],
              states: {
                 active: {
-                    new: :published,
+                    fresh: :published,
                     published: {
-                        needs_approval: [:approved, :duplicate, :new],
+                        needs_approval: [:approved, :duplicate, :fresh],
                         approved: :closed
                     }
                 },
@@ -68,7 +68,7 @@ end
 
 project = Project.new
 project.active? # => true
-project.new? # => true
+project.fresh? # => true
 project.published? # => false
 ```
 
@@ -81,11 +81,11 @@ class Project
 
     field :published_at, type: Time
 
-    stateful default: :new,
+    stateful default: :fresh,
              events: [:publish, :unpublish, :approve, :close, :mark_as_duplicate],
              states: {
                 active: {
-                    new: :published,
+                    fresh: :published,
                     published: {
                         needs_approval: [:approved, :duplicate],
                         approved: :closed
