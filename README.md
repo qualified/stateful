@@ -82,7 +82,7 @@ class Project
     field :published_at, type: Time
 
     stateful default: :draft,
-             events: [:publish, :unpublish, :approve, :close, :mark_as_duplicate],
+             events: [:publish, :unpublish, :approve, :complete, :mark_as_duplicate],
              states: {
                 active: {
                     draft: :published,
@@ -92,7 +92,7 @@ class Project
                     }
                 },
                 inactive: {
-                    closed: nil,
+                    completed: nil,
                     duplicate: nil
                 }
              }
