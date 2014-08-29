@@ -18,4 +18,12 @@ RSpec.configure do |config|
   #     --seed 1234
   config.order = 'random'
 
+  # configure local env variables if file exists
+  env_file = './local_env.yml'
+  YAML.load(File.open(env_file)).each do |key, value|
+    ENV[key.to_s] = value
+  end if File.exists?(env_file)
 end
+
+
+
