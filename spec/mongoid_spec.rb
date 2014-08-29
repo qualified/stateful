@@ -34,11 +34,23 @@ class Kata
   end
 end
 
+class SubKata < Kata
+  stateful default: :draft, events: [:publish, :approve, :retire], states: {
+      :draft => :beta,
+      beta: {
+          :needs_testing => :needs_approval,
+          :needs_approval => :approved
+      },
+      :approved => :extra,
+      :extra => nil
+  }
+end
+
 describe Stateful::MongoidIntegration do
   let(:kata) {Kata.new}
 
   it 'should support creating a state field' do
-    Kata.fields.keys.include?('state').should be_true
+    expect(Kata.fields.keys.include?('state')).to be_truthy
   end
 
   it 'should support callbacks' do
@@ -46,42 +58,55 @@ describe Stateful::MongoidIntegration do
   end
 
   it 'should support validating state values' do
-    kata.state.should == :draft
-    kata.merge_status.should == :na
-    kata.valid?.should be_true
+    expect(kata.state).to eq(:draft)
+    expect(kata.merge_status).to eq(:na)
+    expect(kata.valid?).to be_truthy
     kata.state = :invalid
-    kata.valid?.should be_false
+    expect(kata.valid?).to be_falsey
   end
 
   it 'should allow states to be set manually' do
     kata.state = :approved
-    kata.valid?.should be_true
+    expect(kata.valid?).to be_truthy
   end
 
   it 'should support state boolean helpers' do
-    kata.draft?.should be_true
-    kata.beta?.should be_false
+    expect(kata.draft?).to be_truthy
+    expect(kata.beta?).to be_falsey
     kata.state = :needs_testing
-    kata.beta?.should be_true
+    expect(kata.beta?).to be_truthy
   end
 
   it 'should support can_transition_to?' do
-    kata.can_transition_to_state?(:needs_testing).should be_true
-    kata.can_transition_to_state?(:retired).should be_false
+    expect(kata.can_transition_to_state?(:needs_testing)).to be_truthy
+    expect(kata.can_transition_to_state?(:retired)).to be_falsey
   end
 
   it 'should create scopes for each state and virtual state' do
-    Kata.beta.selector.should == {"state" => {"$in" => [:needs_testing, :needs_approval]}}
-    Kata.draft.selector.should == {"state" => :draft}
+    expect(Kata.beta.selector).to eq({"state" => {"$in" => [:needs_testing, :needs_approval]}})
+    expect(Kata.draft.selector).to eq({"state" => :draft})
   end
 
   it 'should create prefixed scopes for each state and virtual state of custom state fields' do
-    Kata.merge_status_pending.selector.should == {"merge_status" => :pending}
+    expect(Kata.merge_status_pending.selector).to eq({"merge_status" => :pending})
   end
 
   it 'should support previous_state' do
-    kata.previous_state.should be_nil
-
+    expect(kata.previous_state).to be_nil
     # cant test after creation right now until mongoid is configured correctly
+  end
+
+  describe 'Subclass Overrides' do
+    let(:kata) { SubKata.new }
+
+    it 'should have a valid :extra state' do
+      kata.state = :extra
+      expect(kata).to be_valid
+    end
+
+    it 'should have a invalid :retired state' do
+      kata.state = :retired
+      expect(kata).to be_valid
+    end
   end
 end

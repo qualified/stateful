@@ -11,23 +11,16 @@ module Stateful
         values_method_name = "#{options[:name]}_values"
         values = __send__("#{options[:name]}_infos").keys
 
-        # if valid values have already been defined then update the existing value, so that we don't end up
-        # defining two different sets of inclusion validations
-        if self.class.respond_to?(values_method_name)
-          old_values = self.class.__send(values_method_name)
-          old_values.keep_if {|v| values.member?(v)}
-          old_values |= values
-        else
-          define_singleton_method(values_method_name) do
-            values
-          end
-
-          validates_inclusion_of options[:name].to_sym,
-                                 in: values,
-                                 message:  options.has_key?(:message) ? options[:message] : "has invalid value",
-                                 allow_nil: !!options[:allow_nil]
+        define_singleton_method(values_method_name) do
+          values
         end
 
+        validates_inclusion_of options[:name].to_sym,
+                               in: values,
+                               message:  options.has_key?(:message) ? options[:message] : "has invalid value",
+                               allow_nil: !!options[:allow_nil],
+                               # prevents validation from being called if the state field is redefined in a subclass
+                               if: Proc.new { |_| values == self.class.__send__(values_method_name) }
 
         # configure scopes to query the attribute value
         __send__("#{options[:name]}_infos").values.each do |info|
