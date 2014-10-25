@@ -27,9 +27,9 @@ module Stateful
           states = info.collect_child_states
           scope_name = "#{options[:prefix]}#{info.name}"
           if states.length == 1
-            scope scope_name, where(options[:name] => states.first)
+            scope scope_name, -> { where(options[:name] => states.first) }
           else
-            scope scope_name, where(options[:name].to_sym.in => states)
+            scope scope_name, -> { where(options[:name].to_sym.in => states) }
           end
         end
 

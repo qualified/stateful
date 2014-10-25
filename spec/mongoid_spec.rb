@@ -30,7 +30,7 @@ class Kata
   end
 
   def persist_state
-
+    true
   end
 end
 
@@ -94,6 +94,32 @@ describe Stateful::MongoidIntegration do
   it 'should support previous_state' do
     expect(kata.previous_state).to be_nil
     # cant test after creation right now until mongoid is configured correctly
+  end
+
+  describe '#change_state' do
+    context 'when state is invalid' do
+      it 'should fail' do
+        expect(kata.send(:change_state, :retired)).to be_falsey
+      end
+
+    end
+
+    context 'when state is valid' do
+      it 'should pass' do
+        kata.stub(:persist_state).and_return(true)
+        expect(kata.send(:change_state, :needs_testing)).to be_truthy
+      end
+
+      it 'should call block even if persist fails' do
+        kata.stub(:persist_state).and_return(false)
+        called = false
+        kata.send(:change_state, :needs_testing) do
+          called = true
+        end
+
+        expect(called).to be_truthy
+      end
+    end
   end
 
   describe 'Subclass Overrides' do
