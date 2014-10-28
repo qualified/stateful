@@ -65,7 +65,7 @@ module Stateful
         #  options[:event] = calling_method if state_events.include? calling_method
         #end
 
-        run_callbacks "#{name}_change".to_sym, new_state do
+        run_callbacks "#{name}_change".to_sym do
 
           run_callbacks (options[:event] || "#{name}_non_event_change") do
             __send__("#{name}=", new_state)
