@@ -132,7 +132,7 @@ describe Stateful::MongoidIntegration do
 
     it 'should have a invalid :retired state' do
       kata.state = :retired
-      expect(kata).to be_valid
+      expect(kata).to be_invalid
     end
   end
 end

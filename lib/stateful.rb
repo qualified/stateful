@@ -5,6 +5,9 @@ module Stateful
   extend ActiveSupport::Concern
   include ActiveSupport::Callbacks
 
+  class StateChangeError < RuntimeError
+  end
+
   included do
     if defined?(Mongoid)
       require 'mongoid/document'
@@ -50,7 +53,7 @@ module Stateful
 
       define_method "change_#{name}!" do |new_state, options = {}, &block|
         current_info = __send__("#{name}_info")
-        raise "transition from #{send(name)} to #{new_state} not allowed for #{name}" unless current_info.can_transition_to?(new_state)
+        raise StateChangeError.new "transition from #{send(name)} to #{new_state} not allowed for #{name}" unless current_info.can_transition_to?(new_state)
         __send__("_change_#{name}", new_state, options, [:persist_state!, :save!], &block)
       end
 
@@ -126,7 +129,9 @@ module Stateful
       # define the transition_to_state method that works in conjunction with the state_event
       define_method "transition_to_#{name}" do |new_state, &block|
         event = __send__("#{name}_event")
-        raise "transition_to_#{name} can only be called while a #{name} event is being called" unless event
+        unless event
+          raise StateChangeError.new "transition_to_#{name} can only be called while a #{name} event is being called"
+        end
 
         method = instance_variable_get("@#{name}_change_method")
         __send__(method, new_state, event, &block)
