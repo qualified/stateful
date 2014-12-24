@@ -14,13 +14,18 @@ class Kata
   end
 
   stateful  default: :draft,
-            events: [:publish, :unpublish, :approve, :retire],
+            events: {
+                publish: :beta,
+                approve: :approved,
+                unpublish: :draft,
+                retire: :retired
+            },
             states: {
                 :draft => :beta,
                 published: {
                     beta: {
                         :needs_feedback => [:draft, :needs_approval],
-                        :needs_approval => [:draft, :approved]
+                        :needs_approval => [:draft, :approved, :retired]
                     },
                     :approved => :retired
                 },
@@ -160,12 +165,12 @@ describe Kata do
       expect(kata.published_at).not_to be_nil
     end
 
-    pending 'should support passing in parameters to state_event defined methods' do
-      expect(kata.published_by).to be_nil
-      kata.publish
-      expect(kata.published_by).to eq('test')
-      expect(kata.published?).to be_truthy
-    end
+    # pending 'should support passing in parameters to state_event defined methods' do
+    #   expect(kata.published_by).to be_nil
+    #   kata.publish
+    #   expect(kata.published_by).to eq('test')
+    #   expect(kata.published?).to be_truthy
+    # end
 
     it 'should support ingoring passed blocked when state is not valid' do
       kata.approve('test')
@@ -187,6 +192,17 @@ describe Kata do
       expect(kata.can_transition_to_merge_status?(:pending)).to be_truthy
       expect(kata.can_transition_to_merge_status?(:approved)).to be_falsey
     end
+
+    describe '#state_allowable_events' do
+      it 'should handle single allowed events' do
+        expect(kata.state_allowable_events).to eq [:publish]
+      end
+
+      it 'should handle multiple allowed events' do
+        kata.state = :needs_approval
+        expect(kata.state_allowable_events).to eq [:approve, :unpublish, :retire]
+      end
+    end
   end
 
   describe Stateful::StateInfo do
@@ -204,7 +220,7 @@ describe Kata do
 
     it 'should support expanded to transitions' do
       expect(Kata.state_infos[:draft].to_transitions).to eq([:needs_feedback, :needs_approval])
-      expect(Kata.state_infos[:needs_approval].to_transitions).to eq([:draft, :approved])
+      expect(Kata.state_infos[:needs_approval].to_transitions).to eq([:draft, :approved, :retired])
 
       expect(Kata.state_infos[:retired].to_transitions).to be_empty
     end

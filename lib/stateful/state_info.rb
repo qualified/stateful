@@ -15,7 +15,7 @@ module Stateful
       @to_transitions = []
 
       if config.is_a?(Hash)
-        @groupConfig = config
+        @group_config = config
         @children = []
       else
         @to_transitions = config ? (config.is_a?(Array) ? config : [config]) : []
@@ -27,7 +27,7 @@ module Stateful
     end
 
     def is_group?
-      !!@groupConfig
+      !!@group_config
     end
 
     def infos

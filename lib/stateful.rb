@@ -26,7 +26,15 @@ module Stateful
 
       options[:name] = name
 
-      options[:events] ||= []
+      if options[:events].is_a? Array
+        options[:events] = {}.tap do |hash|
+          options[:events].each do |event|
+            hash[event] = nil
+          end
+        end
+      end
+
+      options[:events] ||= {}
       options[:prefix] = name == :state ? '' : "#{name}_"
 
       # define the method that will contain the info objects.
@@ -35,6 +43,27 @@ module Stateful
 
       define_method "#{name}_events" do
         options[:events]
+      end
+
+      # returns a list of events that can be called given the current state
+      define_method "#{name}_allowable_events" do
+        options[:events].select do |k, v|
+          fromState = __send__("#{name}_info")
+          v = [v] unless v.is_a? Array
+          v.all? do |v|
+            toState = self.class.__send__("#{name}_infos")[v]
+
+            # if a group state then we need to see if the current state can transition
+            # to all states within the group
+            if toState.is_group?
+              toState.collect_child_states.all? do |state|
+                fromState.can_transition_to?(state)
+              end
+            else
+              fromState.can_transition_to?(v)
+            end
+          end
+        end.keys
       end
 
       define_method "#{name}_info" do
@@ -158,7 +187,7 @@ module Stateful
       define_state_attribute(options)
 
       # define the event callbacks
-      events = (["#{name}_change".to_sym, "#{name}_non_event_change".to_sym] + options[:events])
+      events = (["#{name}_change".to_sym, "#{name}_non_event_change".to_sym] + options[:events].keys)
       define_callbacks *events
 
       # define callback helpers
