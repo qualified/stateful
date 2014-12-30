@@ -100,8 +100,9 @@ module Stateful
         run_callbacks "#{name}_change".to_sym do
 
           run_callbacks (options[:event] || "#{name}_non_event_change") do
+            old_state = __send__(name)
             __send__("#{name}=", new_state)
-            block.call if block
+            block.call(old_state) if block
 
             ## if a specific persist method value was provided
             if options.has_key?(:persist_method)

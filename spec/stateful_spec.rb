@@ -4,7 +4,7 @@ require './lib/stateful'
 class Kata
   include Stateful
 
-  attr_accessor :approved_by, :ready_score, :published_at, :state_changes, :times_pending, :published_by
+  attr_accessor :approved_by, :ready_score, :published_at, :state_changes, :times_pending, :published_by, :old_state
 
   def initialize
     @ready_score = 0
@@ -70,7 +70,9 @@ class Kata
   end
 
   def unpublish
-    change_state(:draft, :unpublish)
+    change_state(:draft, :unpublish) do |old_state|
+      @old_state = old_state
+    end
   end
 
   def approve(approved_by)
@@ -163,6 +165,13 @@ describe Kata do
       expect(kata.published_at).to be_nil
       kata.publish!
       expect(kata.published_at).not_to be_nil
+    end
+
+    it 'should support passing old_state to change_state blocks' do
+      kata.publish!
+      expect(kata.old_state).to be_nil
+      kata.unpublish
+      expect(kata.old_state).to eq :needs_feedback
     end
 
     # pending 'should support passing in parameters to state_event defined methods' do
