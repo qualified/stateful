@@ -90,8 +90,12 @@ class Kata
   end
 end
 
+class SubKata < Kata
+
+end
+
 describe Kata do
-  let(:kata) {Kata.new}
+  let(:kata) {SubKata.new}
 
   it 'should support state_infos' do
     expect(Kata.state_infos).not_to be_nil
