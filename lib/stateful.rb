@@ -37,7 +37,8 @@ module Stateful
       options[:events] ||= {}
       options[:prefix] = name == :state ? '' : "#{name}_"
 
-      klass = self.class
+      # handle different types of inclusion/inheritance
+      klass = self.class == Class ? self : self.class
 
       # define the method that will contain the info objects.
       # we use instance_eval here because its easier to implement the ||= {} logic this way.
