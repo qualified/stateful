@@ -8,6 +8,24 @@ module Stateful
   class StateChangeError < RuntimeError
   end
 
+  protected
+
+  def process_state_transition(field, event, from, to)
+    return unless self.class.all_from_transitions.any?
+
+    self.class.all_from_transitions.each do |transitions|
+      config = transitions[field]
+      config = config[event] if config
+      config = config[from] if config
+      procs = config[to] if config
+      if procs
+        procs.each do |proc|
+          self.instance_eval(&proc)
+        end
+      end
+    end
+  end
+
   included do
     if defined?(Mongoid)
       require 'mongoid/document'
@@ -73,8 +91,8 @@ module Stateful
         end.keys
       end
 
-      define_method "#{name}_info" do
-        self.class.__send__("#{name}_infos")[__send__(name)]
+      define_method "#{name}_info" do |state = __send__(name)|
+        self.class.__send__("#{name}_infos")[state]
       end
 
       define_method "#{name}_valid?" do
@@ -132,6 +150,27 @@ module Stateful
       protected "change_#{name}!"
       private :_change_state
 
+      ## transition validations support
+
+      if options[:validate]
+        validate_method_name = "validate_#{name}_transition"
+        validate(validate_method_name, unless: :new_record?)
+
+        # define a validation method that checks if the updated state is allowed to be transitioned into
+        define_method(validate_method_name) do
+          changes = self.changes[name.to_s]
+          if changes
+            old_state = __send__("#{name}_info", changes.first)
+            unless old_state.can_transition_to?(changes.last)
+              errors[name] << "#{changes.last} is not a valid transition state from #{changes.first}"
+            end
+          end
+        end
+
+        # mark the validates method as protected
+        protected validate_method_name
+      end
+
       ## state events support:
 
       # provide a reader so that the current event being fired can be accessed
@@ -183,8 +222,10 @@ module Stateful
       ## init and configure state info:
 
       init_state_info(name, options[:states])
-      __send__("#{name}_infos").values.each do |info|
-        info.expand_to_transitions
+
+      infos = __send__("#{name}_infos")
+      infos.values.each do |info|
+        info.expand_to_transitions(infos)
 
         define_method "#{options[:prefix]}#{info.name}?" do
           current_info = __send__("#{name}_info")
@@ -210,6 +251,26 @@ module Stateful
       end
     end
 
+    # recursivly collects the from_transitions configuration for all super classes as well as this class.
+    # this method is used by the process_state_transition and is stored in reverse order so that the ancestors are
+    # iterated first
+    def all_from_transitions
+      @all_from_transitions ||= begin
+        all = (from_transitions ? [from_transitions] : [])
+
+        if superclass.respond_to?(:all_from_transitions)
+          all += superclass.all_from_transitions
+        end
+
+        all.reverse
+      end
+    end
+
+    # the stored configuration for the before/after/validate_transition_from family of callback methods
+    def from_transitions
+      @from_transitions ||= {}
+    end
+
     protected
     def define_state_attribute(options)
       define_method options[:name] do
@@ -218,6 +279,51 @@ module Stateful
 
       define_method "#{options[:name]}=" do |val|
         instance_variable_set("@#{options[:name]}", val)
+      end
+    end
+
+    def before_transition_from(field, state = nil)
+      transition_from(:before, field, state)
+    end
+
+    def after_transition_from(field, state = nil)
+      transition_from(:after, field, state)
+    end
+
+    def validate_transition_from(field, state = nil)
+      transition_from(:validate, field, state)
+    end
+
+    def transition_from(event, field, from_state)
+      if from_state.nil?
+        from_state = field
+        field = :state
+      end
+
+      FromTransition.new do |to_states, &block|
+        config = from_transitions[field] ||= {}
+        config = config[event] ||= {}
+        config = config[from_state] ||= {}
+
+        # need to expand the any selector
+        if to_states == [:*]
+          to_states = __send__("#{field}_infos").keys - [from_state]
+        end
+
+        to_states.each do |to_state|
+          config[to_state] ||= []
+          config[to_state] << block
+        end
+      end
+    end
+
+    class FromTransition
+      def initialize(&block)
+        @block = block
+      end
+
+      def to(*states, &block)
+        @block.call(states, &block)
       end
     end
 

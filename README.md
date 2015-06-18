@@ -11,6 +11,7 @@ to keep things simple. It supports the following:
 - Very small code footprint.
 - Mongoid support, automatically creates field, validations and scopes for you.
 - Supports multiple state fields on the same object
+- Flexible design support both an "event driven" style of state changes where specific methods are called as well as an implicit style where you set the state field directly and configure callbacks to handle specific transitions.
 
 ## Installation
 
@@ -101,6 +102,18 @@ class Project
     # ...
 end
 
+# you can allow states to transition to any other state using :*
+class Project
+    include Mongoid::Document
+    include Stateful
+    stateful default: :draft, states: {
+         :draft => :*,
+         :published => :*, 
+         :archived => :draft # can only change to draft
+       } 
+                    
+end
+
 # scopes are automatically created for you
 Project.active.count
 Project.published.count
@@ -158,6 +171,85 @@ So what is going on here? The `state_event` method is being passed the event nam
 
 **Also note** that currently `state_event` does not support handling method arguments. This is a planned feature but for now, if you need to support both bang and non-bang versions than you will need to use the lower level `change_state` method. 
 
+
+### Validations
+
+By default the only validations that take place is that Stateful checks that a defined state value has been set.
+A validation error will be added if an undefined or "group" state is set as the value. 
+
+#### Transition Validations
+You can also enable validations that check that a state has been changed to a valid transition. If you are only
+setting the state value through explicit state events then you shouldn't need to worry about this, however if you
+intend on changing states by setting the state value directly, then you will likely want to use this setting.
+ 
+> Note: Validations are only tested with Mongoid but they should work for any ActiveRecord compatible interface. 
+
+```ruby
+class Project
+    include Mongoid::Document 
+    include Stateful
+    stateful default: :draft, validate: true, states: {
+         :draft => :*,
+         :published => :*, 
+         :archived => :draft
+       } 
+                    
+end
+
+project.state = :archived
+project.save!
+
+project.state = :published
+project.save! # raises error
+```
+
+### Before/After/Validate callbacks
+
+You can specify callbacks to fire when states are transitioned from one state to another. This is particulary useful
+when you are not using explicit event style methods for changing state but instead using `validate: true` and
+setting the state field directly. 
+
+```ruby
+class Project
+  include Mongoid::Document
+  include Stateful
+
+  stateful default: :draft, validate: true, states: {
+    :draft => :*,
+    :published => :*,
+    :archived => :draft
+  }
+
+  field :published_at, type: Time
+  field :prevent_unarchive, type: Boolean
+
+  # called before save
+  before_transition_from(:draft).to(:published) do
+    self.published_at = Time.now
+  end
+
+  # called before save
+  before_transition_from(:published).to(:draft) do
+    self.published_at = nil
+  end
+  
+  # called after save
+  after_transition_from(:published).to(:archived) do
+    # some sort of follow up code like sending a notification
+  end
+
+  # you can use :* to specify any "to" state.
+  validate_transition_from(:archived).to(:*) do
+    if prevent_unarchive
+      errors[:state] << "unarchiving has been disabled"
+    end
+  end
+end
+```
+
+## TODO
+
+- While the codebase is considered stable and tested, it is in a huge need of refactoring as its design has evolved significatly beyond its original scope. 
 
 ## Contributing
 

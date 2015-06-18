@@ -47,8 +47,12 @@ module Stateful
       is_group? ? children.flat_map(&:collect_child_states) : [name]
     end
 
-    def expand_to_transitions
+    def expand_to_transitions(infos)
       if to_transitions.any?
+        if @to_transitions == [:*]
+          @to_transitions = infos.keys - [@name]
+        end
+
         @to_transitions = to_transitions.flat_map do |to|
           info = infos[to]
 

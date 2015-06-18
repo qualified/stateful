@@ -1,12 +1,24 @@
 module Stateful
+  # TODO: Test this code with ActiveRecord as it should in theory work just fine, with exception to maybe the scopes
   module MongoidIntegration
     extend ActiveSupport::Concern
+
+    protected
+
+    def process_state_transition_from_changes(field, event)
+      changes = self.changes[field.to_s]
+      if changes
+        process_state_transition(field, event, changes.first, changes.last)
+      end
+    end
 
     module ClassMethods
       protected
 
       def define_state_attribute(options)
-        field options[:name].to_sym, type: Symbol, default: options[:default]
+        name = options[:name].to_sym
+
+        field name, type: Symbol, default: options[:default]
 
         values_method_name = "#{options[:name]}_values"
         values = __send__("#{options[:name]}_infos").keys
@@ -15,7 +27,7 @@ module Stateful
           values
         end
 
-        validates_inclusion_of options[:name].to_sym,
+        validates_inclusion_of name,
                                in: values,
                                message:  options.has_key?(:message) ? options[:message] : "has invalid value",
                                allow_nil: !!options[:allow_nil],
@@ -27,9 +39,9 @@ module Stateful
           states = info.collect_child_states
           scope_name = "#{options[:prefix]}#{info.name}"
           if states.length == 1
-            scope scope_name, -> { where(options[:name] => states.first) }
+            scope scope_name, -> { where(name => states.first) }
           else
-            scope scope_name, -> { where(options[:name].to_sym.in => states) }
+            scope scope_name, -> { where(name.in => states) }
           end
         end
 
@@ -44,6 +56,17 @@ module Stateful
           self.class.__send__("#{options[:name]}_infos")[state] if state
         end
 
+        validate do
+          process_state_transition_from_changes(options[:name], :validate)
+        end
+
+        before_save do
+          process_state_transition_from_changes(options[:name], :before)
+        end
+
+        after_save do
+          process_state_transition_from_changes(options[:name], :after)
+        end
       end
     end
   end
