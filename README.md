@@ -238,7 +238,7 @@ class Project
     # some sort of follow up code like sending a notification
   end
 
-  # you can use :* to specify any "to" state.
+  # you can use :* to specify any "from" or "to" state.
   validate_transition_from(:archived).to(:*) do
     if prevent_unarchive
       errors[:state] << "unarchiving has been disabled"
@@ -251,7 +251,7 @@ There is also a "when" DSL which allows you to only specify the from/to conditio
 callbacks.
 
 ```ruby
-when_transition_from(:draft).to(:published)
+when_transition_from(:*).to(:published)
     .before do
         # before save
     end
@@ -265,7 +265,7 @@ when_transition_from(:draft).to(:published)
 
 ## TODO
 
-- While the codebase is considered stable and tested, it is in a huge need of refactoring as its design has evolved significatly beyond its original scope. 
+- While the codebase is considered stable and tested, it is in a huge need of refactoring as its design has evolved significatly beyond its original scope.
 
 ## Contributing
 

@@ -282,37 +282,50 @@ module Stateful
       end
     end
 
-    def before_transition_from(field, state = nil)
-      transition_from(:before_save, field, state)
+    def before_transition_from(field, from_states = nil)
+      transition_from(:before_save, field, from_states)
     end
 
-    def after_transition_from(field, state = nil)
-      transition_from(:after_save, field, state)
+    def after_transition_from(field, from_states = nil)
+      transition_from(:after_save, field, from_states)
     end
 
-    def validate_transition_from(field, state = nil)
-      transition_from(:validate, field, state)
+    def validate_transition_from(field, from_states = nil)
+      transition_from(:validate, field, from_states)
     end
 
-    def transition_from(event, field, from_state)
-      if from_state.nil?
-        from_state = field
+    def transition_from(event, field, from_states)
+      if from_states.nil?
+        from_states = field
         field = :state
       end
 
+      from_states = [from_states] unless from_states.is_a? Array
+
+      # need to expand any selector. In this case we grab all of the states and then filter out later.
+      if from_states == [:*]
+        from_states = __send__("#{field}_infos").keys
+      end
+
       FromTransition.new do |to_states, &block|
-        config = from_transitions[field] ||= {}
-        config = config[event] ||= {}
-        config = config[from_state] ||= {}
+        to_states = to_states.flatten # just in case an array was explictely passed in
+        from_states.each do |from_state|
+          config = from_transitions[field] ||= {}
+          config = config[event] ||= {}
+          config = config[from_state] ||= {}
 
-        # need to expand the any selector
-        if to_states == [:*]
-          to_states = __send__("#{field}_infos").keys - [from_state]
-        end
+          # need to expand the any selector
+          if to_states == [:*]
+            to_states = __send__("#{field}_infos").keys - [from_state]
+          end
 
-        to_states.each do |to_state|
-          config[to_state] ||= []
-          config[to_state] << block
+          to_states.each do |to_state|
+            # need to filter since the from :* selector could result in from and to being the same
+            unless to_state == from_state
+              config[to_state] ||= []
+              config[to_state] << block
+            end
+          end
         end
       end
     end
