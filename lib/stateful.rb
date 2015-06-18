@@ -283,11 +283,11 @@ module Stateful
     end
 
     def before_transition_from(field, state = nil)
-      transition_from(:before, field, state)
+      transition_from(:before_save, field, state)
     end
 
     def after_transition_from(field, state = nil)
-      transition_from(:after, field, state)
+      transition_from(:after_save, field, state)
     end
 
     def validate_transition_from(field, state = nil)
@@ -334,12 +334,12 @@ module Stateful
       end
 
       def before(&block)
-        @block.call(:before, @states, &block)
+        @block.call(:before_save, @states, &block)
         self
       end
 
       def after(&block)
-        @block.call(:after, @states, &block)
+        @block.call(:after_save, @states, &block)
         self
       end
 
@@ -347,6 +347,10 @@ module Stateful
         @block.call(:validate, @states, &block)
         self
       end
+
+      # def method_missing(name, &block)
+      #   @block.call(name, @states, &block)
+      # end
     end
 
     class FromTransition

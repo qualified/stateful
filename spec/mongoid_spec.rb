@@ -121,7 +121,7 @@ describe Stateful::MongoidIntegration do
   describe '::from_transitions' do
     it 'should set the proper configuration' do
       transitions = FreeFormExample.from_transitions
-      expect(transitions[:state][:before][:draft][:published].first).to be_a Proc
+      expect(transitions[:state][:before_save][:draft][:published].first).to be_a Proc
       expect(transitions[:state][:validate][:archived][:published].size).to eq 1
     end
   end

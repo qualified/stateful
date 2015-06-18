@@ -247,6 +247,22 @@ class Project
 end
 ```
 
+There is also a "when" DSL which allows you to only specify the from/to conditions once for multiple 
+callbacks.
+
+```ruby
+when_transition_from(:draft).to(:published)
+    .before do
+        # before save
+    end
+    .after do
+        # after save
+    end
+    .validate do
+        #validation code
+    end
+```
+
 ## TODO
 
 - While the codebase is considered stable and tested, it is in a huge need of refactoring as its design has evolved significatly beyond its original scope. 

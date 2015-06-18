@@ -61,11 +61,11 @@ module Stateful
         end
 
         before_save do
-          process_state_transition_from_changes(options[:name], :before)
+          process_state_transition_from_changes(options[:name], :before_save)
         end
 
         after_save do
-          process_state_transition_from_changes(options[:name], :after)
+          process_state_transition_from_changes(options[:name], :after_save)
         end
       end
     end
