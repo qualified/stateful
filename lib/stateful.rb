@@ -317,6 +317,38 @@ module Stateful
       end
     end
 
+    def when_transition_from(field, from_state = nil)
+      WhenTransition.new do |event, to_states, &block|
+        transition_from(event, field, from_state).to(*to_states, &block)
+      end
+    end
+
+    class WhenTransition
+      def initialize(&block)
+        @block = block
+      end
+
+      def to(*states)
+        @states = states
+        self
+      end
+
+      def before(&block)
+        @block.call(:before, @states, &block)
+        self
+      end
+
+      def after(&block)
+        @block.call(:after, @states, &block)
+        self
+      end
+
+      def validate(&block)
+        @block.call(:validate, @states, &block)
+        self
+      end
+    end
+
     class FromTransition
       def initialize(&block)
         @block = block

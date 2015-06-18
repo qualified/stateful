@@ -62,15 +62,16 @@ class FreeFormExample
   field :published_at, type: Time
   field :prevent_unarchive, type: Boolean
 
-  before_transition_from(:draft).to(:published) do
-    self.published_at = Time.now
-  end
+  attr_reader :validate_called, :published_from_draft
+
+  when_transition_from(:draft).to(:published)
+    .before { self.published_at = Time.now }
+    .after  { @published_from_draft = true }
 
   before_transition_from(:published).to(:draft) do
     self.published_at = nil
   end
 
-  attr_reader :validate_called
 
   validate_transition_from(:archived).to(:*) do
     if prevent_unarchive
@@ -150,6 +151,12 @@ describe Stateful::MongoidIntegration do
       example.save
       expect(example.published_at).to_not be_nil
     end
+
+    # it 'should call after transitions' do
+    #   example.state = :published
+    #   example.save
+    #   expect(example.published_from_draft).to be true
+    # end
 
     it 'should run validations' do
       example.state = :archived
