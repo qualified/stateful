@@ -373,6 +373,14 @@ module Stateful
         end
       end
 
+      def before_validation(&block)
+        run(:before_validation, &block)
+      end
+
+      def after_validation(&block)
+        run(:after_validation, &block)
+      end
+
       def before_save(&block)
         run(:before_save, &block)
       end

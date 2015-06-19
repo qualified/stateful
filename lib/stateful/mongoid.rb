@@ -67,6 +67,14 @@ module Stateful
         after_save do
           process_state_transition_from_changes(options[:name], :after_save)
         end
+
+        before_validation do
+          process_state_transition_from_changes(options[:name], :before_validation)
+        end
+
+        after_validation do
+          process_state_transition_from_changes(options[:name], :after_validation)
+        end
       end
     end
   end
