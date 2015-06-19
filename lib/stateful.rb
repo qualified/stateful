@@ -20,7 +20,7 @@ module Stateful
       procs = config[to] if config
       if procs
         procs.each do |proc|
-          self.instance_eval(&proc)
+          self.instance_exec(from, to, &proc)
         end
       end
     end
@@ -375,6 +375,7 @@ module Stateful
 
       def to(*states, &block)
         @block.call(states, &block)
+        self
       end
     end
 
