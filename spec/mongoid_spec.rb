@@ -56,7 +56,9 @@ class FreeFormExample
   stateful default: :draft, validate: true, states: {
     :draft => :*,
     :published => :*,
-    :archived => :draft
+    inactive: {
+      :archived => :draft
+    }
   }
 
   field :published_at, type: Time
@@ -100,7 +102,7 @@ class FreeFormExample
 end
 
 class SubExample < FreeFormExample
-  validate_transition_from(:archived).to(:*) do
+  validate_transition_from(:inactive).to(:*) do
     @validate_called += 1
   end
 end

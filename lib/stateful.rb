@@ -303,9 +303,7 @@ module Stateful
       from_states = [from_states] unless from_states.is_a? Array
 
       # need to expand any selector. In this case we grab all of the states and then filter out later.
-      if from_states == [:*]
-        from_states = __send__("#{field}_infos").keys
-      end
+      from_states = expand_state_names(field, from_states)
 
       FromTransition.new do |to_states, &block|
         to_states = to_states.flatten # just in case an array was explictely passed in
@@ -314,12 +312,7 @@ module Stateful
           config = config[event] ||= {}
           config = config[from_state] ||= {}
 
-          # need to expand the any selector
-          if to_states == [:*]
-            to_states = __send__("#{field}_infos").keys - [from_state]
-          end
-
-          to_states.each do |to_state|
+          expand_state_names(field, to_states).each do |to_state|
             # need to filter since the from :* selector could result in from and to being the same
             unless to_state == from_state
               config[to_state] ||= []
@@ -334,6 +327,15 @@ module Stateful
       WhenTransition.new do |event, to_states, &block|
         transition_from(event, field, from_state).to(*to_states, &block)
       end
+    end
+
+    def expand_state_names(field, states, excludes = [])
+      infos = __send__("#{field}_infos")
+      states = infos.keys if states == [:*]
+      infos = states.map do |state|
+        info = infos[state]
+        info.is_group? ? info.children : info
+      end.flatten.uniq.map(&:name) - excludes
     end
 
     class WhenTransition
