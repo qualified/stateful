@@ -203,7 +203,7 @@ project.state = :published
 project.save! # raises error
 ```
 
-### Before/After/Validate callbacks
+### before_save/after_save/before_valadation/after_validation/validate callbacks
 
 You can specify callbacks to fire when states are transitioned from one state to another. This is particulary useful
 when you are not using explicit event style methods for changing state but instead using `validate: true` and
