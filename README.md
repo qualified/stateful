@@ -252,10 +252,10 @@ callbacks.
 
 ```ruby
 when_transition.from(:*).to(:published)
-    .before do
+    .before_save do
         # before save
     end
-    .after do
+    .after_save do
         # after save
     end
     .validate do

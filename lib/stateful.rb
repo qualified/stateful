@@ -8,6 +8,16 @@ module Stateful
   class StateChangeError < RuntimeError
   end
 
+  # the all when_transition.protect callbacks will be ignored if processed while inside of this block
+  def unprotected(&block)
+    begin
+      @unprotected = true
+      block.call
+    ensure
+      @unprotected = false
+    end
+  end
+
   protected
 
   def process_state_transition(field, event, from, to)
@@ -161,7 +171,7 @@ module Stateful
           changes = self.changes[name.to_s]
           if changes
             old_state = __send__("#{name}_info", changes.first)
-            unless old_state.can_transition_to?(changes.last)
+            unless !old_state or old_state.can_transition_to?(changes.last)
               errors[name] << "#{changes.last} is not a valid transition state from #{changes.first}"
             end
           end
@@ -354,6 +364,23 @@ module Stateful
         self
       end
 
+      # this callback is ran before_save unless it is called inside of a "unprotected" block
+      def protect(&block)
+        run :before_save do |from, to|
+          unless @unprotected
+            instance_exec(from, to, &block)
+          end
+        end
+      end
+
+      def before_save(&block)
+        run(:before_save, &block)
+      end
+
+      def after_save(&block)
+        run(:after_save, &block)
+      end
+
       def before(&block)
         run(:before_save, &block)
       end
@@ -367,7 +394,7 @@ module Stateful
       end
 
       # def method_missing(name, &block)
-      #   @block.call(name, @states, &block)
+      #   run(name, &block)
       # end
 
       protected

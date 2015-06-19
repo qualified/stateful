@@ -58,7 +58,8 @@ class FreeFormExample
     :published => :*,
     inactive: {
       :archived => :draft
-    }
+    },
+    :failed => nil
   }
 
   field :published_at, type: Time
@@ -69,11 +70,14 @@ class FreeFormExample
   when_transition
       .from(:draft)
         .to(:published)
-          .before { self.published_at = Time.now }
-          .after  { @published_from_draft = true }
+          .before_save { self.published_at = Time.now }
+          .after_save  { @published_from_draft = true }
       .from(:published)
         .to(:draft)
-          .before { self.published_at = nil }
+          .before_save { self.published_at = nil }
+      .from(:*)
+        .to(:failed)
+          .protect { raise "not allowed" }
 
   validate_transition_from(:archived).to(:*) do
     if prevent_unarchive
@@ -137,7 +141,7 @@ describe Stateful::MongoidIntegration do
     end
   end
 
-  describe '*_transition_from().to' do
+  describe 'transition DSL' do
     before { example.save }
 
     it 'should inherit from parent if available' do
@@ -168,6 +172,20 @@ describe Stateful::MongoidIntegration do
 
       example.prevent_unarchive = true
       expect(example).to_not be_valid
+    end
+
+    describe '#protect' do
+      it 'should raise if called outside of an unprotected block' do
+        example.state = :failed
+        expect{example.save}.to raise_error
+      end
+
+      it 'should not raise if called inside of an unprotected block' do
+        example.unprotected do
+          example.state = :failed
+          expect(example.save).to eq true
+        end
+      end
     end
   end
 
