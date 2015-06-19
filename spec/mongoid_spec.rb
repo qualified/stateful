@@ -66,14 +66,14 @@ class FreeFormExample
 
   attr_reader :validate_called, :published_from_draft
 
-  when_transition_from(:draft).to(:published)
-    .before { self.published_at = Time.now }
-    .after  { @published_from_draft = true }
-
-  before_transition_from(:published).to(:draft) do
-    self.published_at = nil
-  end
-
+  when_transition
+      .from(:draft)
+        .to(:published)
+          .before { self.published_at = Time.now }
+          .after  { @published_from_draft = true }
+      .from(:published)
+        .to(:draft)
+          .before { self.published_at = nil }
 
   validate_transition_from(:archived).to(:*) do
     if prevent_unarchive

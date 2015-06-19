@@ -323,9 +323,9 @@ module Stateful
       end
     end
 
-    def when_transition_from(field, from_state = nil)
-      WhenTransition.new do |event, to_states, &block|
-        transition_from(event, field, from_state).to(*to_states, &block)
+    def when_transition(field = :state)
+      WhenTransition.new do |event, from_states, to_states, &block|
+        transition_from(event, field, from_states).to(*to_states, &block)
       end
     end
 
@@ -333,9 +333,8 @@ module Stateful
       infos = __send__("#{field}_infos")
       states = infos.keys if states == [:*]
       infos = states.map do |state|
-        info = infos[state]
-        info.is_group? ? info.children : info
-      end.flatten.uniq.map(&:name) - excludes
+        infos[state].collect_child_states
+      end.flatten.uniq - excludes
     end
 
     class WhenTransition
@@ -343,29 +342,40 @@ module Stateful
         @block = block
       end
 
+      def from(*states)
+        @from_states = states
+        # force the dsl to require a follow up "to" decleration for easier readability
+        @to_states = nil
+        self
+      end
+
       def to(*states)
-        @states = states
+        @to_states = states
         self
       end
 
       def before(&block)
-        @block.call(:before_save, @states, &block)
-        self
+        run(:before_save, &block)
       end
 
       def after(&block)
-        @block.call(:after_save, @states, &block)
-        self
+        run(:after_save, &block)
       end
 
       def validate(&block)
-        @block.call(:validate, @states, &block)
-        self
+        run(:validate, &block)
       end
 
       # def method_missing(name, &block)
       #   @block.call(name, @states, &block)
       # end
+
+      protected
+
+      def run(event, &block)
+        @block.call(event, @from_states, @to_states, &block)
+        self
+      end
     end
 
     class FromTransition

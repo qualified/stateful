@@ -251,7 +251,7 @@ There is also a "when" DSL which allows you to only specify the from/to conditio
 callbacks.
 
 ```ruby
-when_transition_from(:*).to(:published)
+when_transition.from(:*).to(:published)
     .before do
         # before save
     end
