@@ -343,13 +343,13 @@ module Stateful
     def expand_state_names(field, states, excludes = [])
       infos = __send__("#{field}_infos")
 
-      # map :* to all states
+      # map :* to all states + nil
       states = states.map do |state|
-        state == :* ? infos.keys : state
+        state == :* ? [infos.keys] << nil : state
       end.flatten
 
       infos = states.map do |state|
-        state.nil? ? nil : infos[state].collect_child_states
+        infos[state].collect_child_states if state
       end.flatten.uniq - excludes
     end
 
