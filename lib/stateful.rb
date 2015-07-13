@@ -28,6 +28,7 @@ module Stateful
       config = config[event] if config
       config = config[from] if config
       procs = config[to] if config
+
       if procs
         procs.each do |proc|
           self.instance_exec(from, to, &proc)
@@ -341,9 +342,14 @@ module Stateful
 
     def expand_state_names(field, states, excludes = [])
       infos = __send__("#{field}_infos")
-      states = infos.keys if states == [:*]
+
+      # map :* to all states
+      states = states.map do |state|
+        state == :* ? infos.keys : state
+      end.flatten
+
       infos = states.map do |state|
-        infos[state].collect_child_states
+        state.nil? ? nil : infos[state].collect_child_states
       end.flatten.uniq - excludes
     end
 

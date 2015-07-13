@@ -64,6 +64,8 @@ class FreeFormExample
 
   field :published_at, type: Time
   field :prevent_unarchive, type: Boolean
+  field :defaulted_to_draft, type: Boolean, default: false
+  field :was_drafted, type: Boolean, default: false
 
   attr_reader :validate_called, :published_from_draft
 
@@ -78,6 +80,12 @@ class FreeFormExample
       .from(:*)
         .to(:failed)
           .protect { raise "not allowed" }
+      .from(nil)
+        .to(:draft)
+          .before_save { self.defaulted_to_draft = true }
+      .from(:*, nil)
+        .to(:draft)
+          .before_save { self.was_drafted = true }
 
   validate_transition_from(:archived).to(:*) do
     if prevent_unarchive
@@ -143,6 +151,24 @@ describe Stateful::MongoidIntegration do
 
   describe 'transition DSL' do
     before { example.save }
+
+    context 'nil from transitions' do
+      it 'should support use them when defined' do
+        sub_example.save
+        expect(sub_example.defaulted_to_draft).to be true
+      end
+
+      it 'should support use them when defined within an array' do
+        sub_example.save
+        expect(sub_example.was_drafted).to be true
+      end
+
+      it 'should ignore them when not relevant' do
+        sub_example.state = :archived
+        sub_example.save
+        expect(sub_example.defaulted_to_draft).to be false
+      end
+    end
 
     it 'should inherit from parent if available' do
       sub_example.state = :archived
