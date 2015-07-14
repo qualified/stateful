@@ -18,6 +18,10 @@ module Stateful
     end
   end
 
+  def unprotected?
+    @unprotected
+  end
+
   protected
 
   def process_state_transition(field, event, from, to)
@@ -403,8 +407,8 @@ module Stateful
       end
 
       # this callback is ran before_save unless it is called inside of a "unprotected" block
-      def protect(&block)
-        add_callback :before_save do |from, to|
+      def protect(callback = :before_save, &block)
+        add_callback(callback) do |from, to|
           unless @unprotected
             instance_exec(from, to, &block)
           end
