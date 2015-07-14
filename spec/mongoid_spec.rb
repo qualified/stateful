@@ -54,11 +54,13 @@ class FreeFormExample
   include Stateful
 
   stateful default: :draft, validate: true, states: {
+    :nil => [:draft, :published, :archived],
     :draft => :*,
     :published => :*,
     inactive: {
       :archived => :draft
     },
+    :non_initial => :*,
     :failed => nil
   }
 
@@ -131,11 +133,16 @@ describe Stateful::MongoidIntegration do
     project.publish
   end
 
+  it 'should support nil transition checks' do
+    example.state = :non_initial
+    expect(example.save).to be false
+  end
+
   describe '::from_transitions' do
     it 'should set the proper configuration' do
       transitions = FreeFormExample.from_transitions
       expect(transitions[:state][:before_save][:draft][:published].first).to be_a Proc
-      expect(transitions[:state][:validate][:archived][:published].size).to eq 1
+      expect(transitions[:state][:validate][:archived][:published].first).to be_a Proc
     end
   end
 

@@ -50,7 +50,7 @@ module Stateful
     def expand_to_transitions(infos)
       if to_transitions.any?
         if @to_transitions == [:*]
-          @to_transitions = infos.keys - [@name]
+          @to_transitions = infos.keys - [@name, :nil]
         end
 
         @to_transitions = to_transitions.flat_map do |to|

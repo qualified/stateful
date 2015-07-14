@@ -53,7 +53,7 @@ module Stateful
 
         define_method "previous_#{options[:name]}_info" do
           state = __send__("previous_#{options[:name]}")
-          self.class.__send__("#{options[:name]}_infos")[state] if state
+          self.class.__send__("#{options[:name]}_infos")[state]
         end
 
         validate do

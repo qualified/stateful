@@ -23,6 +23,8 @@ module Stateful
   def process_state_transition(field, event, from, to)
     return unless self.class.all_from_transitions.any?
 
+    from = :nil if from.nil?
+
     self.class.all_from_transitions.each do |transitions|
       config = transitions[field]
       config = config[event] if config
@@ -55,6 +57,14 @@ module Stateful
 
       options[:name] = name
 
+
+      #### initial state support
+      # :nil is used to represent a new object's state and is used to handle security
+      # for initial object values. It is added by default if not provided specifically
+      options[:states][:nil] ||= :*
+      ####
+
+      #### events are being phased out
       if options[:events].is_a? Array
         options[:events] = {}.tap do |hash|
           options[:events].each do |event|
@@ -165,14 +175,14 @@ module Stateful
 
       if options[:validate]
         validate_method_name = "validate_#{name}_transition"
-        validate(validate_method_name, unless: :new_record?)
+        validate(validate_method_name)
 
         # define a validation method that checks if the updated state is allowed to be transitioned into
         define_method(validate_method_name) do
           changes = self.changes[name.to_s]
           if changes
             old_state = __send__("#{name}_info", changes.first)
-            unless !old_state or old_state.can_transition_to?(changes.last)
+            unless old_state.can_transition_to?(changes.last)
               errors[name] << "#{changes.last} is not a valid transition state from #{changes.first}"
             end
           end
@@ -243,6 +253,9 @@ module Stateful
           !!(current_info && current_info.is?(info.name))
         end
       end
+
+      # alias :nil to nil for easier lookup
+      infos[nil] = infos[:nil]
 
       define_state_attribute(options)
 
@@ -345,11 +358,11 @@ module Stateful
 
       # map :* to all states + nil
       states = states.map do |state|
-        state == :* ? [infos.keys] << nil : state
+        state == :* ? [infos.keys] << :nil : state
       end.flatten
 
       infos = states.map do |state|
-        infos[state].collect_child_states if state
+        infos[state || :nil].collect_child_states
       end.flatten.uniq - excludes
     end
 
