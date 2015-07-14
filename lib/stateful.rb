@@ -335,7 +335,7 @@ module Stateful
     end
 
     def when_transition(field = :state)
-      WhenTransition.new do |event, from_states, to_states, &block|
+      WhenTransition.new(field) do |event, from_states, to_states, &block|
         transition_from(event, field, from_states).to(*to_states, &block)
       end
     end
@@ -354,7 +354,8 @@ module Stateful
     end
 
     class WhenTransition
-      def initialize(&block)
+      def initialize(field, &block)
+        @field = field
         @block = block
       end
 
@@ -370,9 +371,26 @@ module Stateful
         self
       end
 
+      # easy way to add validation errors based off of state. If a truthy value is returned than the
+      # validation error will be added to the state field. You can pass a string back to customize the
+      # validation error, otherwise return true and a default error will be added.
+      def forbid_if(&block)
+        field = @field
+        add_callback :validate do |from, to|
+          result = instance_exec(from, to, &block)
+          if result
+            if result.is_a?(String)
+              self.errors[field] << result
+            else
+              self.errors[field] << "Cannot transition from #{from} to #{to}"
+            end
+          end
+        end
+      end
+
       # this callback is ran before_save unless it is called inside of a "unprotected" block
       def protect(&block)
-        run :before_save do |from, to|
+        add_callback :before_save do |from, to|
           unless @unprotected
             instance_exec(from, to, &block)
           end
@@ -380,31 +398,31 @@ module Stateful
       end
 
       def before_validation(&block)
-        run(:before_validation, &block)
+        add_callback(:before_validation, &block)
       end
 
       def after_validation(&block)
-        run(:after_validation, &block)
+        add_callback(:after_validation, &block)
       end
 
       def before_save(&block)
-        run(:before_save, &block)
+        add_callback(:before_save, &block)
       end
 
       def after_save(&block)
-        run(:after_save, &block)
+        add_callback(:after_save, &block)
       end
 
       def before(&block)
-        run(:before_save, &block)
+        add_callback(:before_save, &block)
       end
 
       def after(&block)
-        run(:after_save, &block)
+        add_callback(:after_save, &block)
       end
 
       def validate(&block)
-        run(:validate, &block)
+        add_callback(:validate, &block)
       end
 
       # def method_missing(name, &block)
@@ -413,7 +431,7 @@ module Stateful
 
       protected
 
-      def run(event, &block)
+      def add_callback(event, &block)
         @block.call(event, @from_states, @to_states, &block)
         self
       end

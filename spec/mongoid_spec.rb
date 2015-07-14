@@ -82,6 +82,9 @@ class FreeFormExample
       .from(nil)
         .to(:draft)
           .before_save { self.was_drafted = true }
+      .from(:archived)
+        .to(:published)
+          .forbid_if { true }
 
   validate_transition_from(:archived).to(:*) do
     if prevent_unarchive
@@ -147,6 +150,16 @@ describe Stateful::MongoidIntegration do
 
   describe 'transition DSL' do
     before { example.save }
+
+    context 'forbid_if' do
+      it 'should mark the record as invalid' do
+        sub_example.state = :archived
+        sub_example.save
+        sub_example.state = :published
+        expect(sub_example.valid?).to be false
+      end
+    end
+
 
     context 'nil from transitions' do
       it 'should support use them when defined' do
