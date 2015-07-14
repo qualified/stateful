@@ -23,8 +23,6 @@ module Stateful
   def process_state_transition(field, event, from, to)
     return unless self.class.all_from_transitions.any?
 
-    from = :nil if from.nil?
-
     self.class.all_from_transitions.each do |transitions|
       config = transitions[field]
       config = config[event] if config
@@ -358,12 +356,15 @@ module Stateful
 
       # map :* to all states + nil
       states = states.map do |state|
-        state == :* ? [infos.keys] << :nil : state
+        state == :* ? [infos.keys] << nil : state
       end.flatten
 
       infos = states.map do |state|
-        infos[state || :nil].collect_child_states
+        infos[state].collect_child_states
       end.flatten.uniq - excludes
+
+      # we need to handle the special nil name
+      infos.map {|info| info == :nil ? nil : info }
     end
 
     class WhenTransition
