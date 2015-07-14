@@ -36,12 +36,14 @@ module Stateful
 
         # configure scopes to query the attribute value
         __send__("#{options[:name]}_infos").values.each do |info|
-          states = info.collect_child_states
-          scope_name = "#{options[:prefix]}#{info.name}"
-          if states.length == 1
-            scope scope_name, -> { where(name => states.first) }
-          else
-            scope scope_name, -> { where(name.in => states) }
+          if info.name != :nil
+            states = info.collect_child_states
+            scope_name = "#{options[:prefix]}#{info.name}"
+            if states.length == 1
+              scope scope_name, -> { where(name => states.first) }
+            else
+              scope scope_name, -> { where(name.in => states) }
+            end
           end
         end
 
