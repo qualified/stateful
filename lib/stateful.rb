@@ -439,6 +439,22 @@ module Stateful
         add_callback(:after_save, &block)
       end
 
+      def before_create(&block)
+        add_callback(:before_create, &block)
+      end
+
+      def after_create(&block)
+        add_callback(:after_create, &block)
+      end
+
+      def before_update(&block)
+        add_callback(:before_update, &block)
+      end
+
+      def after_update(&block)
+        add_callback(:after_update, &block)
+      end
+
       def validate(&block)
         add_callback(:validate, &block)
       end
@@ -446,8 +462,6 @@ module Stateful
       # def method_missing(name, &block)
       #   run(name, &block)
       # end
-
-      protected
 
       def add_callback(event, &block)
         @block.call(event, @from_states, @to_states, &block)
