@@ -69,12 +69,17 @@ class FreeFormExample
   field :was_drafted, type: Boolean, default: false
 
   attr_reader :validate_called, :published_from_draft
+  attr_accessor :after_publish_callback
 
   when_transition
       .from(:draft)
         .to(:published)
           .before_save { self.published_at = Time.now }
-          .after_save  { @published_from_draft = true }
+          .after_save do
+            @published_from_draft = true
+            # our ghetto hook for testing event firing behavior
+            after_publish_callback.call if after_publish_callback
+          end
       .from(:published)
         .to(:draft)
           .before_save { self.published_at = nil }
@@ -100,8 +105,9 @@ class FreeFormExample
     if valid?
       run_callbacks(:save) do
         @persisted = true
-        post_persist
       end
+
+      post_persist
 
       true
     else
@@ -209,6 +215,12 @@ describe Stateful::MongoidIntegration do
 
       example.prevent_unarchive = true
       expect(example).to_not be_valid
+    end
+
+    it 'should only allow persistance callbacks to be triggered once per object lifecycle' do
+      example.after_publish_callback = -> { example.save }
+      example.state = :published
+      expect { example.save }.to_not raise_error
     end
 
     describe '#protect' do
