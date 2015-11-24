@@ -18,67 +18,67 @@ module Stateful
       def define_state_attribute(options)
         name = options[:name].to_sym
 
-        field name, type: Symbol, default: options[:default]
+        field(name, type: Symbol, default: options[:default]).tap do
+          values_method_name = "#{options[:name]}_values"
+          values = __send__("#{options[:name]}_infos").keys
 
-        values_method_name = "#{options[:name]}_values"
-        values = __send__("#{options[:name]}_infos").keys
+          define_singleton_method(values_method_name) do
+            values
+          end
 
-        define_singleton_method(values_method_name) do
-          values
-        end
+          validates_inclusion_of name,
+                                 in: values,
+                                 message:  options.has_key?(:message) ? options[:message] : "has invalid value",
+                                 allow_nil: !!options[:allow_nil],
+                                 # prevents validation from being called if the state field is redefined in a subclass
+                                 if: Proc.new { |_| values == self.class.__send__(values_method_name) }
 
-        validates_inclusion_of name,
-                               in: values,
-                               message:  options.has_key?(:message) ? options[:message] : "has invalid value",
-                               allow_nil: !!options[:allow_nil],
-                               # prevents validation from being called if the state field is redefined in a subclass
-                               if: Proc.new { |_| values == self.class.__send__(values_method_name) }
-
-        # configure scopes to query the attribute value
-        __send__("#{options[:name]}_infos").values.each do |info|
-          if info.name != :nil
-            states = info.collect_child_states
-            scope_name = "#{options[:prefix]}#{info.name}"
-            scope_not_name = "#{options[:prefix]}not_#{info.name}"
-            if states.length == 1
-              scope scope_name, -> { where(name => states.first) }
-              scope scope_not_name, -> { where(name.ne => states.first) }
-            else
-              scope scope_name, -> { where(name.in => states) }
-              scope scope_not_name, -> { where(name.nin => states) }
+          # configure scopes to query the attribute value
+          __send__("#{options[:name]}_infos").values.each do |info|
+            if info.name != :nil
+              states = info.collect_child_states
+              scope_name = "#{options[:prefix]}#{info.name}"
+              scope_not_name = "#{options[:prefix]}not_#{info.name}"
+              if states.length == 1
+                scope scope_name, -> { where(name => states.first) }
+                scope scope_not_name, -> { where(name.ne => states.first) }
+              else
+                scope scope_name, -> { where(name.in => states) }
+                scope scope_not_name, -> { where(name.nin => states) }
+              end
             end
           end
-        end
 
-        # provide a previous_state helper since mongoid provides the state_change method for us
-        define_method "previous_#{options[:name]}" do
-          changes = __send__("#{options[:name]}_change")
-          changes.first if changes and changes.any?
-        end
+          # provide a previous_state helper since mongoid provides the state_change method for us
+          define_method "previous_#{options[:name]}" do
+            changes = __send__("#{options[:name]}_change")
+            changes.first if changes and changes.any?
+          end
 
-        define_method "previous_#{options[:name]}_info" do
-          state = __send__("previous_#{options[:name]}")
-          self.class.__send__("#{options[:name]}_infos")[state]
-        end
+          define_method "previous_#{options[:name]}_info" do
+            state = __send__("previous_#{options[:name]}")
+            self.class.__send__("#{options[:name]}_infos")[state]
+          end
 
-        validate do
-          process_state_transition_from_changes(options[:name], :validate)
-        end
+          validate do
+            process_state_transition_from_changes(options[:name], :validate)
+          end
 
-        before_save do
-          process_state_transition_from_changes(options[:name], :before_save)
-        end
+          before_save do
+            process_state_transition_from_changes(options[:name], :before_save)
+          end
 
-        after_save do
-          process_state_transition_from_changes(options[:name], :after_save)
-        end
+          after_save do
+            process_state_transition_from_changes(options[:name], :after_save)
+          end
 
-        before_validation do
-          process_state_transition_from_changes(options[:name], :before_validation)
-        end
+          before_validation do
+            process_state_transition_from_changes(options[:name], :before_validation)
+          end
 
-        after_validation do
-          process_state_transition_from_changes(options[:name], :after_validation)
+          after_validation do
+            process_state_transition_from_changes(options[:name], :after_validation)
+          end
         end
       end
     end

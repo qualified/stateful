@@ -259,8 +259,6 @@ module Stateful
       # alias :nil to nil for easier lookup
       infos[nil] = infos[:nil]
 
-      define_state_attribute(options)
-
       # define the event callbacks
       events = (["#{name}_change".to_sym, "#{name}_non_event_change".to_sym] + options[:events].keys)
       define_callbacks *events
@@ -275,6 +273,8 @@ module Stateful
           set_callback(event, :after, method ? method : block)
         end
       end
+
+      define_state_attribute(options)
     end
 
     # recursivly collects the from_transitions configuration for all super classes as well as this class.
