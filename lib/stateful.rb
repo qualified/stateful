@@ -472,8 +472,8 @@ module Stateful
           key = [from, to]
           ran_events = @ran_stateful_callbacks[key] ||= {}
           ran_blocks = ran_events[event] ||= []
-          unless ran_blocks.include?(block)
-            ran_blocks << block
+          unless ran_blocks.include?(block.hash)
+            ran_blocks << block.hash
             instance_exec(from, to, &block)
           end
         end
