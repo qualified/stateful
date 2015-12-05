@@ -69,13 +69,21 @@ class FreeFormExample
   field :was_drafted, type: Boolean, default: false
 
   attr_reader :validate_called, :published_from_draft
-  attr_accessor :after_publish_callback
+  attr_accessor :after_publish_callback, :star_saved, :publish_saved
 
   when_transition
+      .from(:*)
+        .to(:*)
+          .after_save do
+            self.star_saved = true
+          end
+        .to(:failed)
+          .protect { raise "not allowed" }
       .from(:draft)
         .to(:published)
           .before_save { self.published_at = Time.now }
           .after_save do
+            self.publish_saved = true
             @published_from_draft = true
             # our ghetto hook for testing event firing behavior
             after_publish_callback.call if after_publish_callback
@@ -83,9 +91,6 @@ class FreeFormExample
       .from(:published)
         .to(:draft)
           .before_save { self.published_at = nil }
-      .from(:*)
-        .to(:failed)
-          .protect { raise "not allowed" }
       .from(nil)
         .to(:draft)
           .before_save { self.was_drafted = true }
@@ -199,6 +204,13 @@ describe Stateful::MongoidIntegration do
       example.state = :published
       example.save
       expect(example.published_at).to_not be_nil
+    end
+
+    it 'should handle star + specific transitions' do
+      example.state = :published
+      example.save
+      expect(example.star_saved).to be true
+      expect(example.publish_saved).to be true
     end
 
     # it 'should call after transitions' do

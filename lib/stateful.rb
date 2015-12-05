@@ -428,7 +428,7 @@ module Stateful
       end
 
       def after_save(&block)
-        add_run_once_callback(:after_save, &block)
+        add_callback(:after_save, &block)
       end
 
       def before(&block)
