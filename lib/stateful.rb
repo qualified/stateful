@@ -428,7 +428,7 @@ module Stateful
       end
 
       def after_save(&block)
-        add_callback(:after_save, &block)
+        add_run_once_callback(:after_save, &block)
       end
 
       def before(&block)
@@ -470,9 +470,10 @@ module Stateful
         add_callback(event) do |from, to|
           @ran_stateful_callbacks ||= {}
           key = [from, to]
-          ran_events = @ran_stateful_callbacks[key] ||= []
-          unless ran_events.include?(event)
-            ran_events << event
+          ran_events = @ran_stateful_callbacks[key] ||= {}
+          ran_blocks = ran_events[event] ||= []
+          unless ran_blocks.include?(block)
+            ran_blocks << block
             instance_exec(from, to, &block)
           end
         end
