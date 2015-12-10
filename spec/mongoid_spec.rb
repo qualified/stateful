@@ -307,9 +307,9 @@ describe Stateful::MongoidIntegration do
 
   it 'should create scopes for each state and virtual state' do
     expect(Project.beta.selector).to eq({"state" => {"$in" => [:needs_testing, :needs_approval]}})
-    expect(Project.not_beta.selector).to eq({"state" => {"$nin" => [:needs_testing, :needs_approval]}})
+    expect(Project.not.beta.selector).to eq({"state"=>{"$not"=>{"$in"=>[:needs_testing, :needs_approval]}}})
     expect(Project.draft.selector).to eq({"state" => :draft})
-    expect(Project.not_draft.selector).to eq({"state"=>{"$ne"=>:draft}})
+    expect(Project.not.draft.selector).to eq({"state"=>{"$ne"=>:draft}})
   end
 
   it 'should create prefixed scopes for each state and virtual state of custom state fields' do

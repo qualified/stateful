@@ -37,14 +37,17 @@ module Stateful
           __send__("#{options[:name]}_infos").values.each do |info|
             if info.name != :nil
               states = info.collect_child_states
+              prefix = options[:prefix]
+
               scope_name = "#{options[:prefix]}#{info.name}"
-              scope_not_name = "#{options[:prefix]}not_#{info.name}"
+
+              # common state name that we can't use without a prefix
+              scope_name = "#{options[:name]}_new" if scope_name == 'new'
+
               if states.length == 1
                 scope scope_name, -> { where(name => states.first) }
-                scope scope_not_name, -> { where(name.ne => states.first) }
               else
                 scope scope_name, -> { where(name.in => states) }
-                scope scope_not_name, -> { where(name.nin => states) }
               end
             end
           end

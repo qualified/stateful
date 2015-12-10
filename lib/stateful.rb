@@ -51,6 +51,10 @@ module Stateful
 
   module ClassMethods
 
+    def stateful_fields
+      @stateful_fields ||= {}
+    end
+
     def stateful(name, options = nil)
       if name.is_a?(Hash)
         options = name
@@ -58,7 +62,6 @@ module Stateful
       end
 
       options[:name] = name
-
 
       #### initial state support
       # :nil is used to represent a new object's state and is used to handle security
@@ -76,10 +79,12 @@ module Stateful
       end
 
       options[:events] ||= {}
-      options[:prefix] = name == :state ? '' : "#{name}_"
+      options[:prefix] ||= name == :state ? '' : "#{name}_"
 
       # handle different types of inclusion/inheritance
       klass = self.class == Class ? self : self.class
+
+      stateful_fields[options[:name]] = options
 
       # define the method that will contain the info objects.
       # we use instance_eval here because its easier to implement the ||= {} logic this way.
@@ -171,7 +176,8 @@ module Stateful
 
       protected "change_#{name}"
       protected "change_#{name}!"
-      private :_change_state
+      protected "change_#{name}!"
+      private "_change_#{name}"
 
       ## transition validations support
 
@@ -364,7 +370,12 @@ module Stateful
       end.flatten
 
       infos = states.map do |state|
-        infos[state].collect_child_states
+        info = infos[state]
+        if info
+          info.collect_child_states
+        else
+          raise "There is no info for state #{state}"
+        end
       end.flatten.uniq - excludes
 
       # we need to handle the special nil name
