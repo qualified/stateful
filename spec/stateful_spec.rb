@@ -20,6 +20,7 @@ class Kata
                 unpublish: :draft,
                 retire: :retired
             },
+            track: [:published, :draft],
             states: {
                 :draft => :beta,
                 published: {
@@ -110,6 +111,7 @@ describe Kata do
   it 'should support state_info' do
     expect(kata.state_info).not_to be_nil
     expect(kata.state_info.name).to eq(:draft)
+    expect(kata.state_info.tracked).to eq(true)
 
     # custom names
     expect(kata.merge_status_info).not_to be_nil
@@ -229,6 +231,14 @@ describe Kata do
 
       # custom
       expect(Kata.merge_status_infos[:na].is?(:na)).to be_truthy
+    end
+
+    it 'should support tracked states' do
+      expect(Kata.state_infos[:draft].tracked).to be_truthy
+      expect(Kata.state_infos[:beta].tracked).to be_truthy
+      expect(Kata.state_infos[:approved].tracked).to be_truthy
+      expect(Kata.state_infos[:needs_approval].tracked).to be_falsey
+      expect(Kata.state_infos[:retired].tracked).to be_falsey
     end
 
     it 'should support expanded to transitions' do

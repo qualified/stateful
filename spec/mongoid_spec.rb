@@ -8,15 +8,17 @@ class Project
   include Mongoid::Document
   include Stateful
 
-  stateful default: :draft, events: [:publish, :approve, :retire], states: {
-    :draft => :beta,
-    beta: {
-      :needs_testing => :needs_approval,
-      :needs_approval => :approved
-    },
-    :approved => :retired,
-    :retired => nil
-  }
+  stateful default: :draft,
+           events: [:publish, :approve, :retire],
+           states: {
+            :draft => :beta,
+            beta: {
+              :needs_testing => :needs_approval,
+              :needs_approval => :approved
+            },
+            :approved => :retired,
+            :retired => nil
+          }
 
   stateful :merge_status, default: :na, events: [:merge, :approve_merge, :reject_merge], states: {
     na: :pending,
@@ -53,16 +55,19 @@ class FreeFormExample
   include Mongoid::Document
   include Stateful
 
-  stateful default: :draft, validate: true, states: {
-    :nil => [:draft, :published, :archived],
-    :draft => :*,
-    :published => :*,
-    inactive: {
-      :archived => :draft
-    },
-    :non_initial => :*,
-    :failed => nil
-  }
+  stateful default: :draft,
+           validate: true,
+           track: [:published, :inactive],
+           states: {
+            :nil => [:draft, :published, :archived],
+            :draft => :*,
+            :published => :*,
+            inactive: {
+              :archived => :draft
+            },
+            :non_initial => :*,
+            :failed => nil
+          }
 
   field :published_at, type: Time
   field :prevent_unarchive, type: Boolean
@@ -304,6 +309,33 @@ describe Stateful::MongoidIntegration do
     expect(project.can_transition_to_state?(:needs_testing)).to be_truthy
     expect(project.can_transition_to_state?(:retired)).to be_falsey
   end
+
+  describe 'tracking states' do
+    it 'should track changes to parent states' do
+      example.state = :archived
+      example.save
+      expect(example.inactive_value).to eq :archived
+      expect(example.inactive_at).to_not be_nil
+    end
+
+    it 'should track changes to child states' do
+      example.state = :published
+      example.save
+      expect(example.published_value).to eq :published
+      expect(example.published_at).to_not be_nil
+    end
+
+    it 'should create tracking properties for tracked states' do
+      expect(example).to respond_to(:published_at)
+      expect(example).to respond_to(:published_value)
+      expect(example).to respond_to(:inactive_at)
+      expect(example).to respond_to(:inactive_value)
+
+      expect(example).to_not respond_to(:archived_at)
+      expect(example).to_not respond_to(:archived_value)
+    end
+  end
+
 
   it 'should create scopes for each state and virtual state' do
     expect(Project.beta.selector).to eq({"state" => {"$in" => [:needs_testing, :needs_approval]}})

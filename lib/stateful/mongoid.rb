@@ -33,8 +33,8 @@ module Stateful
                                  # prevents validation from being called if the state field is redefined in a subclass
                                  if: Proc.new { |_| values == self.class.__send__(values_method_name) }
 
-          # configure scopes to query the attribute value
           __send__("#{options[:name]}_infos").values.each do |info|
+            # configure scopes to query the attribute value
             if info.name != :nil
               states = info.collect_child_states
               prefix = options[:prefix]
@@ -49,6 +49,13 @@ module Stateful
               else
                 scope scope_name, -> { where(name.in => states) }
               end
+            end
+
+            # add tracked fields for this state
+            if info.tracked
+              field("#{info.name}_at", type: Time)
+              field("#{info.name}_by", type: User) if defined?(User)
+              field("#{info.name}_value", type: Symbol)
             end
           end
 

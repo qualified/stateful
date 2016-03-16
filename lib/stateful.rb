@@ -22,10 +22,16 @@ module Stateful
     @unprotected
   end
 
+  def self.store
+    store ||= defined?(RequestStore) ? RequestStore.store : Thread.current
+  end
+
   protected
 
   def process_state_transition(field, event, from, to)
     return unless self.class.all_from_transitions.any?
+
+    track_event(to) if event == :after_save
 
     self.class.all_from_transitions.each do |transitions|
       config = transitions[field]
@@ -41,6 +47,23 @@ module Stateful
     end
   end
 
+  # attempts to set fields about the state change if the state was configured to be tracked
+  def track_event(to)
+    info = self.class.state_infos[to]
+    tracked_field = info.tracked ? info.name : tracked_parent(info)
+    if tracked_field
+      self["#{tracked_field}_at"] = Time.now
+      self["#{tracked_field}_by"] = User.current if defined?(User) && User.respond_to?(:current)
+      self["#{tracked_field}_value"] = to
+    end
+  end
+
+  # recursive parent search to see if any parent states are tracked
+  # returns parent name if tracked, otherwise nil
+  def tracked_parent(info)
+    info.parent.tracked ? info.parent.name : tracked_parent(info.parent) if info.parent
+  end
+
   included do
     if defined?(Mongoid)
       require 'mongoid/document'
@@ -53,6 +76,10 @@ module Stateful
 
     def stateful_fields
       @stateful_fields ||= {}
+    end
+
+    def stateful_tracked_fields
+      @stateful_tracked_fields ||= {}
     end
 
     def stateful(name, options = nil)
@@ -85,6 +112,8 @@ module Stateful
       klass = self.class == Class ? self : self.class
 
       stateful_fields[options[:name]] = options
+
+      stateful_tracked_fields[options[:name]] = options[:track]
 
       # define the method that will contain the info objects.
       # we use instance_eval here because its easier to implement the ||= {} logic this way.
@@ -511,7 +540,8 @@ module Stateful
 
     def init_state_info(name, values, parent = nil)
       values.each do |state_name, config|
-        info = __send__("#{name}_infos")[state_name] = Stateful::StateInfo.new(self, name, parent, state_name, config)
+        tracked = @stateful_tracked_fields[name].try(:include?, state_name)
+        info = __send__("#{name}_infos")[state_name] = Stateful::StateInfo.new(self, name, parent, state_name, config, tracked)
         init_state_info(name, config, info) if info.is_group?
       end
     end
