@@ -50,11 +50,13 @@ module Stateful
   # attempts to set fields about the state change if the state was configured to be tracked
   def track_event(to)
     info = self.class.state_infos[to]
-    tracked_field = info.tracked ? info.name : tracked_parent(info)
-    if tracked_field
-      self["#{tracked_field}_at"] = Time.now
-      self["#{tracked_field}_by"] = User.current if defined?(User) && User.respond_to?(:current)
-      self["#{tracked_field}_value"] = to
+    if info
+      tracked_field = info.tracked ? info.name : tracked_parent(info)
+      if tracked_field
+        self["#{tracked_field}_at"] = Time.now
+        self["#{tracked_field}_by"] = User.current if defined?(User) && User.respond_to?(:current)
+        self["#{tracked_field}_value"] = to
+      end
     end
   end
 

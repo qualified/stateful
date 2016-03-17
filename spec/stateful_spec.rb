@@ -235,8 +235,8 @@ describe Kata do
 
     it 'should support tracked states' do
       expect(Kata.state_infos[:draft].tracked).to be_truthy
-      expect(Kata.state_infos[:beta].tracked).to be_truthy
-      expect(Kata.state_infos[:approved].tracked).to be_truthy
+      expect(Kata.state_infos[:published].tracked).to be_truthy
+      expect(Kata.state_infos[:approved].tracked).to be_falsey
       expect(Kata.state_infos[:needs_approval].tracked).to be_falsey
       expect(Kata.state_infos[:retired].tracked).to be_falsey
     end
