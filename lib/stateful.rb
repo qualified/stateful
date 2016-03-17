@@ -115,7 +115,7 @@ module Stateful
 
       stateful_fields[options[:name]] = options
 
-      stateful_tracked_fields[options[:name]] = options[:track]
+      stateful_tracked_fields[options[:name]] = options[:track] if options[:track].present?
 
       # define the method that will contain the info objects.
       # we use instance_eval here because its easier to implement the ||= {} logic this way.
