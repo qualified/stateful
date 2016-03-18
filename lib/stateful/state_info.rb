@@ -1,9 +1,11 @@
 module Stateful
   class StateInfo
-    attr_reader :parent, :children, :name, :to_transitions
-    def initialize(state_class, attr_name, parent, name, config)
+    attr_reader :parent, :children, :name, :to_transitions, :tracked
+    def initialize(state_class, attr_name, parent, name, config, tracked)
       @attr_name = attr_name
       @state_class = state_class
+      @tracked = tracked
+
       if parent
         @parent = parent
         parent.children << self
@@ -33,6 +35,7 @@ module Stateful
     end
 
     def can_transition_to?(state)
+      return true if Stateful.store[:ignore_state_transition_validations]
       state_info = infos[state]
       if is_group? or state_info.nil? or state_info.is_group?
         false
