@@ -55,7 +55,7 @@ module Stateful
       if tracked_field
         self["#{tracked_field}_at"] = Time.now
         self["#{tracked_field}_by"] = User.current if defined?(User) && User.respond_to?(:current)
-        self["#{tracked_field}_value"] = to
+        self["#{tracked_field}_value"] = to if self.respond_to? "#{tracked_field}_value"
       end
     end
   end
@@ -542,7 +542,7 @@ module Stateful
 
     def init_state_info(name, values, parent = nil)
       values.each do |state_name, config|
-        tracked = @stateful_tracked_fields[name].try(:include?, state_name)
+        tracked = @stateful_tracked_fields[name].try(:include?, state_name) if @stateful_tracked_fields
         info = __send__("#{name}_infos")[state_name] = Stateful::StateInfo.new(self, name, parent, state_name, config, tracked)
         init_state_info(name, config, info) if info.is_group?
       end

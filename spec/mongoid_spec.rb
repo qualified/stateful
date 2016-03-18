@@ -311,28 +311,40 @@ describe Stateful::MongoidIntegration do
   end
 
   describe 'tracking states' do
-    it 'should track changes to parent states' do
-      example.state = :archived
-      example.save
-      expect(example.inactive_value).to eq :archived
-      expect(example.inactive_at).to_not be_nil
+    context 'parent states' do
+      before do
+        example.state = :archived
+        example.save
+      end
+
+      it 'should create mongoid fields' do
+        expect(example).to respond_to(:inactive_at)
+        expect(example).to respond_to(:inactive_value)
+      end
+
+      it 'should track changes to parent states' do
+        expect(example.inactive_value).to eq :archived
+        expect(example.inactive_at).to_not be_nil
+      end
     end
 
-    it 'should track changes to child states' do
-      example.state = :published
-      example.save
-      expect(example.published_value).to eq :published
-      expect(example.published_at).to_not be_nil
-    end
+    context 'child states' do
+      before do
+        example.state = :published
+        example.save
+      end
 
-    it 'should create tracking properties for tracked states' do
-      expect(example).to respond_to(:published_at)
-      expect(example).to respond_to(:published_value)
-      expect(example).to respond_to(:inactive_at)
-      expect(example).to respond_to(:inactive_value)
+      it 'should create mongoid fields' do
+        expect(example).to respond_to(:published_at)
+      end
 
-      expect(example).to_not respond_to(:archived_at)
-      expect(example).to_not respond_to(:archived_value)
+      it 'should track the time' do
+        expect(example.published_at).to_not be_nil
+      end
+
+      it 'should not track value' do
+        expect(example).to_not respond_to(:published_value)
+      end
     end
   end
 
