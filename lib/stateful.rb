@@ -31,7 +31,7 @@ module Stateful
   def process_state_transition(field, event, from, to)
     return unless self.class.all_from_transitions.any?
 
-    track_event(to) if event == :after_save
+    track_event(to) if event == :before_save
 
     self.class.all_from_transitions.each do |transitions|
       config = transitions[field]
