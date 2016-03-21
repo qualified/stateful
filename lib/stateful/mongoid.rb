@@ -54,7 +54,7 @@ module Stateful
             # add tracked fields for this state
             if info.tracked
               field("#{info.name}_at", type: Time)
-              field("#{info.name}_by", type: User) if defined?(User) && User.respond_to?(:current)
+              belongs_to("#{info.name}_by", class_name: 'User') if defined?(User) && User.respond_to?(:current)
               field("#{info.name}_value", type: Symbol) if info.is_group?
             end
           end

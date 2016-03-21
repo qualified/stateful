@@ -31,7 +31,7 @@ module Stateful
   def process_state_transition(field, event, from, to)
     return unless self.class.all_from_transitions.any?
 
-    track_event(to) if event == :after_save
+    track_event(to) if event == :before_save
 
     self.class.all_from_transitions.each do |transitions|
       config = transitions[field]
@@ -54,7 +54,7 @@ module Stateful
       tracked_field = info.tracked ? info.name : tracked_parent(info)
       if tracked_field
         self["#{tracked_field}_at"] = Time.now
-        self["#{tracked_field}_by"] = User.current if defined?(User) && User.respond_to?(:current)
+        self["#{tracked_field}_by_id"] = User.current.id.to_s if defined?(User) && User.respond_to?(:current)
         self["#{tracked_field}_value"] = to if self.respond_to? "#{tracked_field}_value"
       end
     end
