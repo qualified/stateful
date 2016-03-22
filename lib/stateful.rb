@@ -54,7 +54,7 @@ module Stateful
       tracked_field = info.tracked ? info.name : tracked_parent(info)
       if tracked_field
         self["#{tracked_field}_at"] = Time.now
-        self["#{tracked_field}_by_id"] = User.current.id.to_s if defined?(User) && User.respond_to?(:current)
+        self["#{tracked_field}_by_id"] = User.current.id.to_s if defined?(User) && User.respond_to?(:current) && User.current.try(:id).present?
         self["#{tracked_field}_value"] = to if self.respond_to? "#{tracked_field}_value"
       end
     end
