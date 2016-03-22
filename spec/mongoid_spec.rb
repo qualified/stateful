@@ -376,6 +376,7 @@ describe Stateful::MongoidIntegration do
 
     context 'User.current not set' do
       before do
+        User.current = nil
         example.state = :published
         example.save
       end
