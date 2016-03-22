@@ -6,13 +6,9 @@ require 'mongoid/document'
 class User
  include Mongoid::Document
 
- def self.current=(current)
-    @@current = current
-  end
-
-  def self.current
-    @@current ||= nil
-  end
+ class << self
+   attr_accessor :current
+ end
 end
 
 class Project
