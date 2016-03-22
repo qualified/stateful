@@ -3,6 +3,17 @@ require './lib/stateful'
 require 'mongoid'
 require 'mongoid/document'
 
+class User
+ include Mongoid::Document
+
+ def self.current=(current)
+    @@current = current
+  end
+
+  def self.current
+    @@current ||= nil
+  end
+end
 
 class Project
   include Mongoid::Document
@@ -344,6 +355,37 @@ describe Stateful::MongoidIntegration do
 
       it 'should not track value' do
         expect(example).to_not respond_to(:published_value)
+      end
+    end
+
+    context 'User.current set' do
+      before do
+        User.current = User.new
+        example.state = :published
+        example.save
+      end
+
+      it 'should create the #{state}_by field' do
+        expect(example).to respond_to(:published_by)
+      end
+
+      it 'should create track the user' do
+        expect(example.published_by_id).to_not be_nil
+      end
+    end
+
+    context 'User.current not set' do
+      before do
+        example.state = :published
+        example.save
+      end
+
+      it 'should create the #{state}_by field' do
+        expect(example).to respond_to(:published_by)
+      end
+
+      it 'should not create track the user' do
+        expect(example.published_by_id).to be_nil
       end
     end
   end
