@@ -214,7 +214,7 @@ module Stateful
 
       if options[:validate]
         validate_method_name = "validate_#{name}_transition"
-        validate(validate_method_name)
+        validate(validate_method_name.to_sym)
 
         # define a validation method that checks if the updated state is allowed to be transitioned into
         define_method(validate_method_name) do
@@ -298,16 +298,16 @@ module Stateful
 
       # define the event callbacks
       events = (["#{name}_change".to_sym, "#{name}_non_event_change".to_sym] + options[:events].keys)
-      define_callbacks *events
+      define_callbacks *events.map(&:to_sym)
 
       # define callback helpers
       events.each do |event|
         define_singleton_method "before_#{event}" do |method = nil, &block|
-          set_callback(event, :before, method ? method : block)
+          set_callback(event.to_sym, :before, method ? method : block)
         end
 
         define_singleton_method "after_#{event}" do |method = nil, &block|
-          set_callback(event, :after, method ? method : block)
+          set_callback(event.to_sym, :after, method ? method : block)
         end
       end
 
@@ -450,7 +450,7 @@ module Stateful
 
       # this callback is ran before_save unless it is called inside of a "unprotected" block
       def protect(callback = :before_save, &block)
-        add_callback(callback) do |from, to|
+        add_callback(callback.to_sym) do |from, to|
           unless @unprotected
             instance_exec(from, to, &block)
           end
@@ -509,7 +509,7 @@ module Stateful
       # This can cause logic that then tries to update the record again which can cause a cyclic loop.
       # So we only run these callbacks once per instance lifecycle, per each state transition.
       def add_run_once_callback(event, &block)
-        add_callback(event) do |from, to|
+        add_callback(event.to_sym) do |from, to|
           @ran_stateful_callbacks ||= {}
           key = [from, to]
           ran_events = @ran_stateful_callbacks[key] ||= {}
