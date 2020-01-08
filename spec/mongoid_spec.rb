@@ -278,6 +278,8 @@ describe Stateful::MongoidIntegration do
       expect(project.state).to eq(:draft)
       expect(project.merge_status).to eq(:na)
       expect(project.valid?).to be_truthy
+      project.state = :beta
+      expect(project.valid?).to be_falsey
       project.state = :invalid
       expect(project.valid?).to be_falsey
     end
