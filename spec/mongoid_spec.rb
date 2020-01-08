@@ -3,6 +3,10 @@ require './lib/stateful'
 require 'mongoid'
 require 'mongoid/document'
 
+Mongoid.configure do |config|
+  config.clients.default = { hosts: [ENV['MONGO_HOST']], database: 'test' }
+end
+
 class User
  include Mongoid::Document
 
