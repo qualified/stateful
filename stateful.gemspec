@@ -23,6 +23,6 @@ to keep things simple.}
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"
-  spec.add_development_dependency "mongoid", "=> 6.4"
+  spec.add_development_dependency "mongoid", ">= 6.4"
 
 end
