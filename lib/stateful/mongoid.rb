@@ -18,7 +18,7 @@ module Stateful
       def define_state_attribute(options)
         name = options[:name].to_sym
 
-        field(name, type: Symbol, default: options[:default]).tap do
+        field(name, type: defined?(StringifiedSymbol) ? StringifiedSymbol : Symbol, default: options[:default]).tap do
           values_method_name = "#{options[:name]}_values"
           values = __send__("#{options[:name]}_infos").keys
 
@@ -55,7 +55,7 @@ module Stateful
             if info.tracked
               field("#{info.name}_at", type: Time)
               belongs_to("#{info.name}_by", class_name: 'User', optional: true) if defined?(User) && User.respond_to?(:current)
-              field("#{info.name}_value", type: Symbol) if info.is_group?
+              field("#{info.name}_value", type: defined?(StringifiedSymbol) ? StringifiedSymbol : Symbol) if info.is_group?
             end
           end
 
