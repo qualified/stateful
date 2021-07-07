@@ -20,7 +20,9 @@ module Stateful
 
         field(name, type: defined?(StringifiedSymbol) ? StringifiedSymbol : Symbol, default: options[:default]).tap do
           values_method_name = "#{options[:name]}_values"
-          values = __send__("#{options[:name]}_infos").keys
+          values = __send__("#{options[:name]}_infos").each_with_object([]) do |(k, v), ss|
+            ss << k unless v.is_group?
+          end
 
           define_singleton_method(values_method_name) do
             values

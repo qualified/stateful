@@ -3,6 +3,10 @@ require './lib/stateful'
 require 'mongoid'
 require 'mongoid/document'
 
+Mongoid.configure do |config|
+  config.clients.default = { hosts: [ENV['MONGO_HOST']], database: 'test' }
+end
+
 class User
  include Mongoid::Document
 
@@ -278,6 +282,8 @@ describe Stateful::MongoidIntegration do
       expect(project.state).to eq(:draft)
       expect(project.merge_status).to eq(:na)
       expect(project.valid?).to be_truthy
+      project.state = :beta
+      expect(project.valid?).to be_falsey
       project.state = :invalid
       expect(project.valid?).to be_falsey
     end

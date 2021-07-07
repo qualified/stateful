@@ -1,0 +1,34 @@
+name: Test
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+    services:
+      mongo:
+        image: mongo:3.6
+        ports:
+          - 27017/tcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '2.5.x'
+      - name: Cache vendor/bundle
+        uses: actions/cache@v1
+        with:
+          path: vendor/bundle
+          key: bundler-${{ hashFiles('stateful.gemspec') }}
+          restore-keys: |
+            bundler-
+      - name: Bundle Install
+        run: |
+          gem install bundler:'< 2'
+          bundle config path vendor/bundle
+          bundle install
+      - name: RSpec
+        run: bundle exec rspec
+        env:
+          MONGO_HOST: localhost:${{ job.services.mongo.ports[27017] }}
