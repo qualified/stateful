@@ -18,7 +18,7 @@ module Stateful
       def define_state_attribute(options)
         name = options[:name].to_sym
 
-        field(name, type: defined?(StringifiedSymbol) ? StringifiedSymbol : Symbol, default: options[:default]).tap do
+        field(name, type: defined?(Mongoid::StringifiedSymbol) ? Mongoid::StringifiedSymbol : Symbol, default: options[:default]).tap do
           values_method_name = "#{options[:name]}_values"
           values = __send__("#{options[:name]}_infos").each_with_object([]) do |(k, v), ss|
             ss << k unless v.is_group?
