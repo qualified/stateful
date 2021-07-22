@@ -23,6 +23,7 @@ module Stateful
     end
 
     def is?(state)
+      state = state&.to_sym
       !!(@name == state or (parent and parent.is?(state)))
     end
 
@@ -35,6 +36,7 @@ module Stateful
     end
 
     def can_transition_to?(state)
+      state = state&.to_sym
       return true if Stateful.store[:ignore_state_transition_validations]
       state_info = infos[state]
       if is_group? or state_info.nil? or state_info.is_group?
