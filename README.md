@@ -1,9 +1,7 @@
 # Stateful
 
-A simple state machine gem. Works with plain ruby objects and Mongoid. This gem aims
-to keep things simple. It supports the following:
+A state machine gem with built in categorization and workflow events. Works with plain ruby objects and Mongoid. It supports the following:
 
-- Simple event model, just use plain ruby methods as your events and use the change_state helper to change the state.
 - Supports virtual/grouped states that can be used to break down top level states into more granular sub-states.
 - Utilizes ActiveSupport::Callbacks
 - Simple hash structure for defining states and their possible transitions. No complicated DSL to learn.
