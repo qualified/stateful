@@ -49,6 +49,7 @@ module Stateful
 
   # attempts to set fields about the state change if the state was configured to be tracked
   def track_event(to)
+    to = to&.to_sym
     info = self.class.state_infos[to]
     if info
       tracked_field = info.tracked ? info.name : tracked_parent(info)
@@ -220,9 +221,9 @@ module Stateful
         define_method(validate_method_name) do
           changes = self.changes[name.to_s]
           if changes
-            old_state = __send__("#{name}_info", changes.first)
+            old_state = __send__("#{name}_info", changes.first&.to_sym)
             unless old_state.can_transition_to?(changes.last)
-              errors[name] << "#{changes.last} is not a valid transition state from #{changes.first}"
+              errors.add(name, :invalid_state_transition, message: "#{changes.last} is not a valid transition state from #{changes.first}")
             end
           end
         end

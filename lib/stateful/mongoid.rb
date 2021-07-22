@@ -8,7 +8,7 @@ module Stateful
     def process_state_transition_from_changes(field, event)
       changes = self.changes[field.to_s]
       if changes
-        process_state_transition(field, event, changes.first, changes.last)
+        process_state_transition(field, event, changes.first&.to_sym, changes.last&.to_sym)
       end
     end
 
