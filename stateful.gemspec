@@ -19,7 +19,7 @@ to keep things simple.}
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency 'activesupport', '~> 6.0'
+  spec.add_dependency 'activesupport', '>= 6.0'
   spec.add_development_dependency "mongoid", "~> 7.0"
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
