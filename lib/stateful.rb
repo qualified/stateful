@@ -441,9 +441,9 @@ module Stateful
           result = instance_exec(from, to, &block)
           if result
             if result.is_a?(String)
-              self.errors[field] << result
+              errors.add(field, result)
             else
-              self.errors[field] << "Cannot transition from #{from} to #{to}"
+              errors.add(field, "Cannot transition from #{from} to #{to}")
             end
           end
         end

@@ -116,7 +116,7 @@ class FreeFormExample
 
   validate_transition_from(:archived).to(:*) do
     if prevent_unarchive
-      errors[:state] << "unarchiving has been disabled"
+      errors.add(:state, "unarchiving has been disabled")
     end
     @validate_called = 1
   end
@@ -191,6 +191,14 @@ describe Stateful::MongoidIntegration do
         sub_example.save
         sub_example.state = :published
         expect(sub_example.valid?).to be false
+      end
+
+      it 'should add a default error message to the state field' do
+        sub_example.state = :archived
+        sub_example.save
+        sub_example.state = :published
+        sub_example.valid?
+        expect(sub_example.errors[:state]).to include('Cannot transition from archived to published')
       end
     end
 
