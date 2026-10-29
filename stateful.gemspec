@@ -20,8 +20,8 @@ to keep things simple.}
   spec.require_paths = ["lib"]
 
   spec.add_dependency 'activesupport', '>= 6.0'
-  spec.add_development_dependency "mongoid", "~> 7.0"
-  spec.add_development_dependency "bundler", "~> 1.3"
+  spec.add_development_dependency "mongoid", ">= 7.0"
+  spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"
 
