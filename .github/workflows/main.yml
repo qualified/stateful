@@ -4,7 +4,6 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
@@ -12,13 +11,11 @@ jobs:
         gemfile:
           - gemfiles/as6.1_mongoid7.4.gemfile
           - gemfiles/as7.0_mongoid7.4.gemfile
-        experimental: [false]
         include:
-          # Mongoid 8.1 after-save dirty tracking is fixed in QUAL-2685.
-          - { ruby: '3.0', gemfile: gemfiles/as6.1_mongoid8.1.gemfile, experimental: true }
-          - { ruby: '3.0', gemfile: gemfiles/as7.0_mongoid8.1.gemfile, experimental: true }
-          - { ruby: '3.3', gemfile: gemfiles/as6.1_mongoid8.1.gemfile, experimental: true }
-          - { ruby: '3.3', gemfile: gemfiles/as7.0_mongoid8.1.gemfile, experimental: true }
+          - { ruby: '3.0', gemfile: gemfiles/as6.1_mongoid8.1.gemfile }
+          - { ruby: '3.0', gemfile: gemfiles/as7.0_mongoid8.1.gemfile }
+          - { ruby: '3.3', gemfile: gemfiles/as6.1_mongoid8.1.gemfile }
+          - { ruby: '3.3', gemfile: gemfiles/as7.0_mongoid8.1.gemfile }
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/${{ matrix.gemfile }}
     services:
