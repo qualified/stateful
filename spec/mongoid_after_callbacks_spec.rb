@@ -20,6 +20,16 @@ class AfterCallbackExample
     @log ||= []
   end
 
+  # counts dispatches before the run-once guard can swallow a duplicate
+  def dispatches
+    @dispatches ||= []
+  end
+
+  def process_state_transition(field, event, from, to)
+    dispatches << [event, from, to]
+    super
+  end
+
   when_transition
     .from(:nil).to(:draft)
       .after_save { log << [:after_save, :nil, :draft] }
@@ -62,10 +72,11 @@ describe 'after_save/after_update transitions against a real MongoDB' do
 
   it 'fires each callback exactly once per save' do
     doc = AfterCallbackExample.create!
-    doc.log.clear
+    doc.dispatches.clear
     doc.state = :published
     doc.save!
-    expect(doc.log.count([:after_save, :draft, :published])).to eq(1)
+    expect(doc.dispatches.count([:after_save, :draft, :published])).to eq(1)
+    expect(doc.dispatches.count([:after_update, :draft, :published])).to eq(1)
   end
 
   it 'fires again for a subsequent distinct transition on the same instance' do
