@@ -8,7 +8,6 @@ require 'mongoid/document'
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 RSpec.configure do |config|
-  config.treat_symbols_as_metadata_keys_with_true_values = true
   config.run_all_when_everything_filtered = true
   config.filter_run :focus
 
@@ -22,7 +21,7 @@ RSpec.configure do |config|
   env_file = './local_env.yml'
   YAML.load(File.open(env_file)).each do |key, value|
     ENV[key.to_s] = value
-  end if File.exists?(env_file)
+  end if File.exist?(env_file)
 end
 
 
