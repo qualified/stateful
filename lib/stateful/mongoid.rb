@@ -5,6 +5,23 @@ module Stateful
 
     protected
 
+    # Mongoid 8 clears dirty tracking before after_* callbacks run, so the change is captured in
+    # before_save and replayed from there.
+    def capture_state_change(field)
+      (@stateful_captured_changes ||= {})[field.to_sym] = self.changes[field.to_s]
+    end
+
+    def process_captured_state_transition(field, event)
+      changes = @stateful_captured_changes && @stateful_captured_changes[field.to_sym]
+      if changes
+        process_state_transition(field, event, changes.first&.to_sym, changes.last&.to_sym)
+      end
+    end
+
+    def clear_captured_state_change(field)
+      @stateful_captured_changes&.delete(field.to_sym)
+    end
+
     def process_state_transition_from_changes(field, event)
       changes = self.changes[field.to_s]
       if changes
@@ -77,11 +94,20 @@ module Stateful
           end
 
           before_save do
+            capture_state_change(options[:name])
             process_state_transition_from_changes(options[:name], :before_save)
           end
 
+          after_update do
+            process_captured_state_transition(options[:name], :after_update)
+          end
+
           after_save do
-            process_state_transition_from_changes(options[:name], :after_save)
+            begin
+              process_captured_state_transition(options[:name], :after_save)
+            ensure
+              clear_captured_state_change(options[:name])
+            end
           end
 
           before_validation do
